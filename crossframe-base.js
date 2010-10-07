@@ -10,7 +10,11 @@ YUI.add("crossframe-base", function (Y) {
      * <p>1. Use Y.CrossFrame.postMessage() instead of HTML 5 window.postMessage.<br>
      * 2. Use Y.on("crossframe:message") instead of HTML 5 window.onmessage<p>
      *
-     * <a href="http://josephj.com/entry.php?id=338">http://josephj.com/entry.php?id=338</a>
+     * <p>Because there must be legend browsers which don't support postMessage, 
+     * you have to provide a proxy file which is at same domain with receiving iframe.
+     * Download the proxy file here: 
+     * <a href="http://josephj.com/project/yui3-crossframe/proxy.html">
+     * http://josephj.com/project/yui3-crossframe/proxy.html</a></p>
      *
      * <p>NOTE: The original idea is coming from Julien Lecomte's 
      *  Introducing CrossFrame, a Safe Communication Mechanism 
@@ -84,7 +88,7 @@ YUI.add("crossframe-base", function (Y) {
      * @param {Object} config The most important property is proxy, URL of proxy file.
      *                         Set this or legend browsers won't work.
      *                         The page source code should be exactly same with
-     *                         http://josephj.com/lab/cross-frame/proxy.html
+     *                         http://josephj.com/project/yui3-crossframe/proxy.html
      * @return void
      */
     postMessage =  function (target, message, config) {
