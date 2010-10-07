@@ -3,21 +3,22 @@
 YUI.add("crossframe-base", function (Y) {
 
     /**
-     * Base Cross Frame functionality. Provides basic cross-browser frame messaging support.
+     * <p>The CrossFrame module add HTML5 postMessage feature for legend browser 
+     * using Iframe in Iframe hack. It also create an same API interface 
+     * for all browsers no matter they support HTML5 postMessage or not.</p>
+     * 
+     * <p>1. Use Y.CrossFrame.postMessage() instead of HTML 5 window.postMessage.<br>
+     * 2. Use Y.on("crossframe:message") instead of HTML 5 window.onmessage<p>
      *
-     * @module    crossframe
-     * @submodule crossframe-base
-     * @author    Joseph Chiang <http://josephj.com/>
-     * @created   2010/10/7
-     */
-
-    /**
-     * Embed this JavaScript as external file for both sender and receiver page.
-     * You can enjoy using same API interface without worrying browser compatibility issues.
-     * Use Y.CrossFrame.postMessage() instead of HTML 5 window.postMessage.
-     * Use Y.on("crossframe:message") instead of HTML 5 window.onmessage
+     * <a href="http://josephj.com/entry.php?id=338">http://josephj.com/entry.php?id=338</a>
      *
-     * @class crossframe
+     * <p>NOTE: The original idea is coming from Julien Lecomte's 
+     *  Introducing CrossFrame, a Safe Communication Mechanism 
+     *  Across Documents and Across Domains</p>
+     *
+     * @module crossframe-base
+     * @class CrossFrame
+     * @static
      */
 
     var _proxyUrl,
@@ -27,7 +28,11 @@ YUI.add("crossframe-base", function (Y) {
         PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z\-_]*['"])|\d+)\]/,
         /**
          * @event crossframe:message
-         * @description This event is fired when target frame receive message
+         * @description This event is fired by YUI.CrossFrame when target frame has received message
+         * @param {Y.Event.Facade} event An Event Facade object
+         * @param {String} message Message which was sent by origin frame
+         * @param {String} domain Domain of origin frame
+         * @param {String} url URL of origin frame
          * @type Event Custom
          */
         E_RECEIVE = "crossframe:message",
@@ -45,16 +50,17 @@ YUI.add("crossframe-base", function (Y) {
         postMessage;
 
 
-    /*
+    /**
      * Create a event publisher to set custom event.
      * The reason to use custom event is to wrap onmessage event for simplification.
      * All browsers use Y.Global.on("crossframe:message", fn) to receive message.
      * Because the custom event will be accessed in different YUI instance,
      * setting this event to global is required.
      *
-     * @method _messagePublisher
+     * @for CrossFrame
+     * @property _messagePublisher
      * @private
-     * @return {Y.EventTarget}
+     * @static
      */
     _messagePublisher = (function () {
         Y.log("_messagePublisher(): is executed", "info", "CrossFrame");
@@ -67,13 +73,15 @@ YUI.add("crossframe-base", function (Y) {
         return _messagePublisher;
     }());
 
-    /*
-     * Cross-browser postMessage method
+    /**
+     * Cross-browser postMessage
      *
+     * @for CrossFrame
      * @method postMessage
-     * @param target  {String} Window object using string "frames['foo']"
-     * @param message {String} Message you want to send to target document (frame)
-     * @param config  {Object} The most important property is proxy, URL of proxy file.
+     * @static
+     * @param {String} target Window object using string "frames['foo']"
+     * @param {String} message Message you want to send to target document (frame)
+     * @param {Object} config The most important property is proxy, URL of proxy file.
      *                         Set this or legend browsers won't work.
      *                         The page source code should be exactly same with
      *                         http://josephj.com/lab/cross-frame/proxy.html
@@ -147,18 +155,13 @@ YUI.add("crossframe-base", function (Y) {
         }
     };
 
-    // Promote CrossFrame to global
-    Y.CrossFrame = {
-        "postMessage": postMessage,
-        "_messagePublisher": _messagePublisher
-    };
-
-    /*
+    /**
      * Initialization for CrossFrame utility
      * It's only useful if host page is receiver and browser has implemented postMessage.
      *
      * @method _init
      * @private
+     * @return void
      */
     _init = function () {
         Y.log("init(): is executed", "info", "CrossFrame");
@@ -180,5 +183,11 @@ YUI.add("crossframe-base", function (Y) {
         }
     };
     _init();
+
+    // Promote CrossFrame to global
+    Y.CrossFrame = {
+        "postMessage": postMessage,
+        "_messagePublisher": _messagePublisher
+    };
 
 }, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse"]});

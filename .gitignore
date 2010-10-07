@@ -1,1 +1,3 @@
-.*.git
+.*.swp
+yuidocs/
+example.sh
