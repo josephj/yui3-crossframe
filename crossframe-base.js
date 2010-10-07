@@ -1,9 +1,11 @@
+/*global window, YUI, document, location */
+/*jslint evil: true */
 YUI.add("crossframe-base", function (Y) {
 
     /**
      * Base Cross Frame functionality. Provides basic cross-browser frame messaging support.
      *
-     * @module    crossframe 
+     * @module    crossframe
      * @submodule crossframe-base
      * @author    Joseph Chiang <http://josephj.com/>
      * @created   2010/10/7
@@ -28,15 +30,15 @@ YUI.add("crossframe-base", function (Y) {
          * @description This event is fired when target frame receive message
          * @type Event Custom
          */
-        E_RECEIVE = "crossframe:message",        
+        E_RECEIVE = "crossframe:message",
         //=============================
         // Private Methods
         //=============================
-        _init, 
+        _init,
         //=============================
         // Private Methods
         //=============================
-        _messagePublisher, 
+        _messagePublisher,
         //=============================
         // Public Methods
         //=============================
@@ -49,12 +51,12 @@ YUI.add("crossframe-base", function (Y) {
      * All browsers use Y.Global.on("crossframe:message", fn) to receive message.
      * Because the custom event will be accessed in different YUI instance,
      * setting this event to global is required.
-     * 
+     *
      * @method _messagePublisher
      * @private
      * @return {Y.EventTarget}
      */
-    _messagePublisher = new function () {
+    _messagePublisher = (function () {
         Y.log("_messagePublisher(): is executed", "info", "CrossFrame");
         var _messagePublisher = new Y.EventTarget();
         _messagePublisher.name = "Cross-frame Message Publisher";
@@ -63,12 +65,12 @@ YUI.add("crossframe-base", function (Y) {
             emitFacade: true
         });
         return _messagePublisher;
-    };
+    }());
 
     /*
      * Cross-browser postMessage method
      *
-     * @method postMessage 
+     * @method postMessage
      * @param target  {String} Window object using string "frames['foo']"
      * @param message {String} Message you want to send to target document (frame)
      * @param config  {Object} The most important property is proxy, URL of proxy file.
@@ -76,7 +78,7 @@ YUI.add("crossframe-base", function (Y) {
      *                         The page source code should be exactly same with
      *                         http://josephj.com/lab/cross-frame/proxy.html
      * @return void
-     */    
+     */
     postMessage =  function (target, message, config) {
         Y.log("postMessage(): is executed", "info", "CrossFrame");
         config = config || {};
@@ -84,9 +86,14 @@ YUI.add("crossframe-base", function (Y) {
         // Check requirement arguments
         if (!target || !message) {
             throw new Error("postMessage Error: You have to provide both target and message arguments.");
-            return;
         }
-        var dataString = [
+        var iframeEl,
+            iframeNode,
+            iframeLoadHandle,
+            proxyUrl,
+            dataString;
+
+        dataString = [
             "target=" + encodeURIComponent(target),
             "message=" + encodeURIComponent(message),
             "domain=" + encodeURIComponent(document.domain),
@@ -96,57 +103,47 @@ YUI.add("crossframe-base", function (Y) {
         // Check if target string is in right format
         if (!PATTERN.test(target)) {
             throw new Error("postMessage Error: frame string format error!");
-            return;
         }
 
-        switch (true) {
 
+        if (typeof window.postMessage !== "undefined") {
             // HTML5's way to post message to different frames without domain security restriction
-            case (typeof window.postMessage !== "undefined"):
-                target = PATTERN.exec(target);
-                target = eval(target[0]);
-                target.postMessage(dataString, "*");
-                break;
-                
+            target = PATTERN.exec(target);
+            target = eval(target[0]);
+            target.postMessage(dataString, "*");
+        } else {
             // Legend browsers like IE 6 or 7 using "iframe in iframe" hack
-            default:
-                var iframeEl,
-                    iframeNode,
-                    iframeLoadHandle,
-                    proxyUrl;
-                    
-                // Get proxy URL
-                if (config.proxy) {
-                    proxyUrl = config.proxy;
-                } else {
-                    throw new Error("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL");
-                    return;
-                }
+            // Get proxy URL
+            if (config.proxy) {
+                proxyUrl = config.proxy;
+            } else {
+                throw new Error("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL");
+            }
 
-                // Create a hidden iframe
-                iframeEl = document.createElement("iframe");
-                iframeEl.style.position   = "absolute";
-                iframeEl.style.top        = "0";
-                iframeEl.style.left       = "0";
-                iframeEl.style.visibility = "hidden";
-                iframeEl.style.width      = "0";
-                iframeEl.style.height     = "0";
-                document.body.appendChild(iframeEl);
+            // Create a hidden iframe
+            iframeEl = document.createElement("iframe");
+            iframeEl.style.position   = "absolute";
+            iframeEl.style.top        = "0";
+            iframeEl.style.left       = "0";
+            iframeEl.style.visibility = "hidden";
+            iframeEl.style.width      = "0";
+            iframeEl.style.height     = "0";
+            document.body.appendChild(iframeEl);
 
-                // Remove <iframe/> while it sends request succesfully
-                iframeNode = Y.one(iframeEl); 
-                iframeLoadHandle = iframeNode.on("load", function () {
-                    Y.detach(iframeLoadHandle);
-                    Y.later(1000, null, function () {
-                        document.body.removeChild(iframeEl);
-                    });
-                });          
+            // Remove <iframe/> while it sends request succesfully
+            iframeNode = Y.one(iframeEl);
+            iframeLoadHandle = iframeNode.on("load", function () {
+                Y.detach(iframeLoadHandle);
+                Y.later(1000, null, function () {
+                    document.body.removeChild(iframeEl);
+                });
+            });
 
-                // Compose iframe URL which includes message
-                iframeEl.src = proxyUrl + "#" + dataString;
+            // Compose iframe URL which includes message
+            iframeEl.src = proxyUrl + "#" + dataString;
 
-                // Append Iframe to document body 
-                document.body.appendChild(iframeEl);
+            // Append Iframe to document body
+            document.body.appendChild(iframeEl);
         }
     };
 
@@ -158,8 +155,8 @@ YUI.add("crossframe-base", function (Y) {
 
     /*
      * Initialization for CrossFrame utility
-     * It's only useful if host page is receiver and browser has implemented postMessage. 
-     * 
+     * It's only useful if host page is receiver and browser has implemented postMessage.
+     *
      * @method _init
      * @private
      */
@@ -167,7 +164,7 @@ YUI.add("crossframe-base", function (Y) {
         Y.log("init(): is executed", "info", "CrossFrame");
         if (typeof window.postMessage !== "undefined") {
             var onmessage =  function (e) {
-                var data    = Y.QueryString.parse(e.data);
+                var data    = Y.QueryString.parse(e.data),
                     message = data.message,
                     domain  = data.domain,
                     url     = data.url;
@@ -175,13 +172,13 @@ YUI.add("crossframe-base", function (Y) {
                 _messagePublisher.fire(E_RECEIVE, message, domain, url);
             };
             // FIXME : Can't use Y.on directly to attach event listener, why?
-            if (typeof window.addEventListener != "undefined") {
+            if (typeof window.addEventListener !== "undefined") {
                 window.addEventListener("message", onmessage, false);
-            } else if (typeof window.attachEvent != "undefined") {
+            } else if (typeof window.attachEvent !== "undefined") {
                 window.attachEvent("onmessage", onmessage);
-            } 
+            }
         }
     };
     _init();
 
-}, "3.2.0", {use:["node", "event", "event-custom", "querystring-parse"]});
+}, "3.2.0", {"requires": ["event-custom", "querystring-parse"]});
