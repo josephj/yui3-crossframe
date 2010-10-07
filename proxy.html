@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title></title>
+</head>
+<body>
+    <script type="text/javascript">
+    /*
+     * This file is for the browsers which not implement web messaging. 
+     * Currently (2010-10-07) that would be Internet Explorer 6 and 7.
+     * 
+     * You need to place this file under the same domain that the message posts to.
+     * For example, you want to send message from a.com to b.com, you need to put this file to b.com.
+     * I recommended that you should put this file at both domains because message usually flies not just one way.
+     */ 
+    (function () {
+        var data, 
+            targetWindow,
+            hasOwnProperty, 
+            parseQueryString,
+            PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/;
+        
+        /*
+         * Check if an object literal contains a specific proprety
+         *
+         * @method hasOwnProperty
+         * @param obj {Object} Object literal
+         * @param property {String} Key
+         * @return {Boolean} false if key not exists
+         */
+        hasOwnProperty = function (obj, property) {
+            if (Object.prototype.hasOwnProperty) {
+                return obj.hasOwnProperty(property);
+            }
+            return (typeof obj[property] !== "undefined" && obj.constructor.prototype[property] !== obj[property]);
+        };    
+
+        /*
+         * Parsing provided location.hash string to object literal
+         *
+         * @method parseQueryString
+         * @param hash {String} URL fragment identifier 
+         * @return {Object} hash information in object literal format
+         */
+        parseQueryString = function (hash) {
+            var data,
+                targetWindow,
+                i,
+                items,
+                item;
+
+            data = {};
+            items = hash.split("&");
+            for (i = 0, j = items.length; i < j; i++) {
+                item = items[i].split("=");
+                if (item.length === 2 && item[0].length > 0) {
+                    data[item[0]] = decodeURIComponent(item[1]);
+                }
+            }
+            return data;
+        };
+
+        // Parsing current URL fragment identifier to object literal
+        data = parseQueryString(location.hash.substr(1));
+
+        // Execute only when 4 proprties exist
+        if (
+            hasOwnProperty(data, "target") && 
+            hasOwnProperty(data, "message") && 
+            hasOwnProperty(data, "domain") && 
+            hasOwnProperty(data, "url")
+        ) {
+            if (!PATTERN.test(data.target)) {
+                throw new Error("Invalid target: " + data.target);
+            }
+            targetWindow = eval("parent." + data.target);
+            
+            // Pass information using YUI 3 custom event
+            targetWindow.YUI().use("event-custom", "crossframe-base", function (Y) {
+                Y.CrossFrame._messagePublisher.fire("crossframe:message", data.message, data.domain, data.url);
+            });
+        }
+        
+    }());
+    </script>
+</body>
+</html>
