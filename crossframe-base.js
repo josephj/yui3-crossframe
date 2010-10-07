@@ -181,4 +181,4 @@ YUI.add("crossframe-base", function (Y) {
     };
     _init();
 
-}, "3.2.0", {"requires": ["event-custom", "querystring-parse"]});
+}, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse"]});
