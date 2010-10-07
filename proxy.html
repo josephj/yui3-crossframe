@@ -74,6 +74,7 @@
             if (!PATTERN.test(data.target)) {
                 throw new Error("Invalid target: " + data.target);
             }
+            // Evaluate failed for IE6
             targetWindow = eval("parent." + data.target);
             
             // Pass information using YUI 3 custom event

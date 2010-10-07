@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-tw">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Cross Frame Prototype</title>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssfonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssbase/base-min.css">
+<script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
+<style>
+body {
+    padding: 10px;
+}
+h1 {
+    font-family: Georgia;
+}
+h2 {
+    font-family: Georgia;
+    margin: 10px 0;
+}
+#data {
+    height: 300px;
+    border: dotted 1px #ccc;
+}
+.loading {
+    background: url(http://devm1-muchiii.dlink.com.tw/miiicasa/bg_loading.gif) center center no-repeat;
+}
+ul {
+}
+ul li {
+    margin-left: 25px;
+    list-style-type: decimal;
+    margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+    <div id="foo">
+        <h1>window.frames["simple-iframe"]</h1>
+        <a href="http://josephjiang.com/project/yui3-crossframe/simple-iframe.html">http://josephjiang.com/project/yui3-crossframe/simple-iframe.html</a>
+        <h2>Data Received:</h2>
+        <div id="data"></div>
+    </div>
+    <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
+    <script type="text/javascript" src="crossframe-base.js"></script>
+    <script type="text/javascript">
+    YUI().use("node", "event", "json-parse", "event-custom", "crossframe-base", "querystring-parse", function (Y) {
+            Y.Global.on("crossframe:message", function (e, message, domain, url) {
+                Y.one("#data").set("innerHTML", message);
+            });
+    });
+    </script>
+</body>
+</html>

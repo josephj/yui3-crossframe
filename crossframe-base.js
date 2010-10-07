@@ -22,7 +22,7 @@ YUI.add("crossframe-base", function (Y) {
         //=============================
         // Constants
         //=============================
-        PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z]*['"])|\d+)\]/,
+        PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z\-_]*['"])|\d+)\]/,
         /**
          * @event crossframe:message
          * @description This event is fired when target frame receive message
@@ -81,6 +81,11 @@ YUI.add("crossframe-base", function (Y) {
         Y.log("postMessage(): is executed", "info", "CrossFrame");
         config = config || {};
 
+        // Check requirement arguments
+        if (!target || !message) {
+            throw new Error("postMessage Error: You have to provide both target and message arguments.");
+            return;
+        }
         var dataString = [
             "target=" + encodeURIComponent(target),
             "message=" + encodeURIComponent(message),
@@ -88,23 +93,10 @@ YUI.add("crossframe-base", function (Y) {
             "url=" + encodeURIComponent(location.href)
         ].join("&");
 
-        // Check requirement arguments
-        if (!target || !message) {
-            throw new Error("postMessage Error: You have to provide both target and message arguments.");
+        // Check if target string is in right format
+        if (!PATTERN.test(target)) {
+            throw new Error("postMessage Error: frame string format error!");
             return;
-        }
-
-        // Check target window
-        switch (typeof target) {
-            case "string":
-                // Check if target string is in right format
-                if (!PATTERN.test(target)) {
-                    throw new Error("postMessage Error: You have to provide both target and message arguments.");
-                    return;
-                }
-                break;
-            case "object":
-                break
         }
 
         switch (true) {
