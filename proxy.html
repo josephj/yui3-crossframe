@@ -2,88 +2,128 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
-<title></title>
-</head>
-<body>
-    <script type="text/javascript">
-    /*
-     * This file is for the browsers which not implement web messaging. 
-     * Currently (2010-10-07) that would be Internet Explorer 6 and 7.
-     * 
-     * You need to place this file under the same domain that the message posts to.
-     * For example, you want to send message from a.com to b.com, you need to put this file to b.com.
-     * I recommended that you should put this file at both domains because message usually flies not just one way.
-     */ 
-    (function () {
-        var data, 
-            targetWindow,
-            hasOwnProperty, 
-            parseQueryString,
-            PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/;
-        
-        /*
-         * Check if an object literal contains a specific proprety
-         *
-         * @method hasOwnProperty
-         * @param obj {Object} Object literal
-         * @param property {String} Key
-         * @return {Boolean} false if key not exists
-         */
-        hasOwnProperty = function (obj, property) {
-            if (Object.prototype.hasOwnProperty) {
-                return obj.hasOwnProperty(property);
-            }
-            return (typeof obj[property] !== "undefined" && obj.constructor.prototype[property] !== obj[property]);
-        };    
+<title>Proxy File for YUI CrossFrame Utility</title>
+<script type="text/javascript">
+/*
+ * This file is for the browsers which not implement web messaging. 
+ * Currently (2010-10-07) that would be Internet Explorer 6 and 7.
+ * 
+ * You need to place this file under the same domain that the message posts to.
+ * For example, you want to send message from a.com to b.com, you need to place this in b.com.
+ * I recommend that you should put this file at both domains because message usually flies 
+ * not just one way.
+ *
+ * @author Joseph Chiang <josephj6802@gmail.com>
+ * @created 2010-10-07
+ */ 
+/*global location */
+/*jslint evil:true */
+(function () {
+    var data, 
+        targetWindow,
+        parseQueryString,
+        postIframeMessage,
+        PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/;
+    
+    /**
+     * Dynamically creating an iframe to simulate HTML5 postMessage method.
+     *
+     * @method postIframeMessage
+     * @private
+     * @return void
+     */
+    postIframeMessage = function (proxyUrl, dataString) {
 
-        /*
-         * Parsing provided location.hash string to object literal
-         *
-         * @method parseQueryString
-         * @param hash {String} URL fragment identifier 
-         * @return {Object} hash information in object literal format
-         */
-        parseQueryString = function (hash) {
-            var data,
-                targetWindow,
-                i,
-                items,
-                item;
+        var iframeEl;
 
-            data = {};
-            items = hash.split("&");
-            for (i = 0, j = items.length; i < j; i++) {
-                item = items[i].split("=");
-                if (item.length === 2 && item[0].length > 0) {
-                    data[item[0]] = decodeURIComponent(item[1]);
-                }
-            }
-            return data;
-        };
+        // Create a hidden iframe
+        iframeEl = document.createElement("iframe");
+        iframeEl.style.position   = "absolute";
+        iframeEl.style.top        = "0";
+        iframeEl.style.left       = "0";
+        iframeEl.style.visibility = "hidden";
+        iframeEl.style.width      = "0";
+        iframeEl.style.height     = "0";
+        document.body.appendChild(iframeEl);
 
-        // Parsing current URL fragment identifier to object literal
-        data = parseQueryString(location.hash.substr(1));
-
-        // Execute only when 4 proprties exist
-        if (
-            hasOwnProperty(data, "target") && 
-            hasOwnProperty(data, "message") && 
-            hasOwnProperty(data, "domain") && 
-            hasOwnProperty(data, "url")
-        ) {
-            if (!PATTERN.test(data.target)) {
-                throw new Error("Invalid target: " + data.target);
-            }
-            // Evaluate failed for IE6
-            targetWindow = eval("parent." + data.target);
-            
-            // Pass information using YUI 3 custom event
-            targetWindow.YUI().use("crossframe", function (Y) {
-                Y.CrossFrame._messagePublisher.fire("crossframe:message", data.message, data.domain, data.url);
-            });
+        // Remove <iframe/> while it sends request succesfully
+        iframeEl.onload = function () {
+            setTimeout(function () {
+                document.body.removeChild(iframeEl);
+            }, 1000);
         }
+
+        // Compose iframe URL which includes message
+        iframeEl.src = proxyUrl + "#" + dataString;
+
+        // Append Iframe to document body
+        document.body.appendChild(iframeEl);
+    };
+
+    /*
+     * Parsing provided location.hash string to object literal
+     *
+     * @method parseQueryString
+     * @param hash {String} URL fragment identifier 
+     * @return {Object} hash information in object literal format
+     */
+    parseQueryString = function (hash) {
+        var data,
+            targetWindow,
+            i,
+            j,
+            items,
+            item;
+
+        data = {};
+        items = hash.split("&");
+        for (i = 0, j = items.length; i < j; i = i + 1) {
+            item = items[i].split("=");
+            if (item.length === 2 && item[0].length > 0) {
+                data[item[0]] = decodeURIComponent(item[1]);
+            }
+        }
+        return data;
+    };
+
+    // Parsing current URL fragment identifier to object literal
+    data = parseQueryString(location.hash.substr(1));
+
+    // Execute only when 4 proprties exist
+    if (
+        data.hasOwnProperty("tid") && 
+        data.hasOwnProperty("message")
+    ) {
+        if (!PATTERN.test(data.target)) {
+            throw new Error("Invalid target: " + data.target);
+        }
+
+        targetWindow = eval("parent." + data.target);
         
-    }());
-    </script>
-</body>
+        // Pass information using YUI 3 custom event
+        if (!targetWindow.YUI) { // App doesn't have YUI.
+            throw new Error("App doesn't include http://a.mimgs.com/bar/api/connector.js script.");
+            return;
+        }
+        targetWindow.YUI().use("event-custom", "crossframe", function (Y) {
+            if (!Y.CrossFrame) {
+                throw new Error("Error: App doesn't include http://a.mimgs.com/bar/api/connector.js script.");
+                return;
+            }
+
+            if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
+                window[data.tid]();
+            } else { // Tell source window this request has been delivered successfully.
+                // TODO: Need another proxyUrl...
+                if (data.hasOwnProperty("proxyUrl")) {
+                    _postIframeMessage(data.proxyUrl, "tid=" + data.tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"));
+                }
+                Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", data.message, data.domain, data.url, data.source);
+            }
+        });
+            
+    }
+}());
+</script>
+</head>
 </html>
