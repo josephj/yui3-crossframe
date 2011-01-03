@@ -69,22 +69,24 @@ YUI.add("crossframe", function (Y) {
      * @private
      */
     _onMessage =  function (e) {
-        var data    = Y.QueryString.parse(e.data);
-            tid     = data.tid;
-            message = data.message;
-            domain  = data.domain;
-            url     = data.url;
+        var data    = Y.QueryString.parse(e.data),
+            tid     = data.tid,
+            message = data.message,
+            domain  = data.domain,
+            url     = data.url,
             source  = data.source,
-            type    = data[E_METHOD];
+            type    = data.type;
+
 
         if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
             if (window.hasOwnProperty(tid)) {
                 window[tid]();
             }
         } else { // Tell source window this request has been delivered successfully.
-            Y.log("_onMessage(). Receive message from App (" + url + ").\n" + message, "info", MODULE_ID);
+            Y.log("_onMessage(). Receive message from App (" + url + ") " + message, "info", MODULE_ID);
             e.source.postMessage("tid=" + tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"), "*");
             if (type) {
+                console.log(type);
                 Y.fire.apply(Y, [type, message, domain, url, source]); // Y.CrossFrame.fire();
             }
             _messagePublisher.fire(E_RECEIVE, message, domain, url, source);
@@ -179,7 +181,7 @@ YUI.add("crossframe", function (Y) {
         data   = data || {};
         config = config || {};
 
-        if (!target || !type || typeof data !== "object") {
+        if (!target || !eventName || typeof data !== "object") {
             return;
         }
         var i, 
@@ -193,7 +195,8 @@ YUI.add("crossframe", function (Y) {
             }
         }
 
-        message = E_METHOD + "=" + eventName + "&" + params.join("&");
+        message = params.join("&");
+        config.type = eventName;
         Y.CrossFrame.postMessage(target, message, config);
     };
 
@@ -219,6 +222,7 @@ YUI.add("crossframe", function (Y) {
         config.onFail    = config.onFail || null;
         config.proxy     = config.proxy || null;
         config.proxy2    = config.proxy2 || null;
+        config.type      = config.type || null;
 
         // Check requirement arguments
         if (!target || !message) {
@@ -233,6 +237,7 @@ YUI.add("crossframe", function (Y) {
 
         dataString = [
             "tid=" + tId,                                    // Trascation ID.
+            "type=" + encodeURIComponent(config.type),       // Event Name
             "target=" + encodeURIComponent(target),          // Target frame name.
             "message=" + encodeURIComponent(message),        // User only uses this column.
             "domain=" + encodeURIComponent(document.domain), // Source domain.

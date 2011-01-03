@@ -34,11 +34,19 @@ YUI().use("crossframe", function (Y) {
     var formNode = Y.one("form");
     formNode.on("submit", function (e) {
         e.preventDefault();
-        Y.CrossFrame.postMessage(
+        Y.CrossFrame.fire(
             "frames['simple-iframe']", // 指定要傳送的 Iframe
+            "crossframe:test1",
+            {"value" : formNode.one("textarea").get("value")}, // 指定要傳送的訊息
+            {proxy: "http://josephjiang.com/project/yui3-crossframe/proxy.html"} // 指定給不支援 postMessage 瀏覽器的 proxy 檔案
+        );
+        
+        /*
+        Y.CrossFrame.postMessage(
             formNode.one("textarea").get("value"), // 指定要傳送的訊息
             {proxy: "http://josephjiang.com/project/yui3-crossframe/proxy.html"} // 指定給不支援 postMessage 瀏覽器的 proxy 檔案
         );
+        */
     });
 });
 </script>
