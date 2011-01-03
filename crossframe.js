@@ -77,15 +77,15 @@ YUI.add("crossframe", function (Y) {
             source  = data.source,
             type    = data[E_METHOD];
 
-        Y.log("_onMessage(). Receive message from App (" + url + ").\n" + message, "info", MODULE_ID);
         if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
             if (window.hasOwnProperty(tid)) {
                 window[tid]();
             }
         } else { // Tell source window this request has been delivered successfully.
+            Y.log("_onMessage(). Receive message from App (" + url + ").\n" + message, "info", MODULE_ID);
             e.source.postMessage("tid=" + tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"), "*");
             if (type) {
-                Y.fire.apply(Y, [type, message, domain, url, source]);
+                Y.fire.apply(Y, [type, message, domain, url, source]); // Y.CrossFrame.fire();
             }
             _messagePublisher.fire(E_RECEIVE, message, domain, url, source);
         }
