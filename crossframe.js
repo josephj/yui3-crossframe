@@ -75,7 +75,9 @@ YUI.add("crossframe", function (Y) {
             source  = data.source;
 
         if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
-            window[tid]();
+            if (window.hasOwnProperty(tid)) {
+                window[tid]();
+            }
         } else { // Tell source window this request has been delivered successfully.
             e.source.postMessage("tid=" + tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"), "*");
             _messagePublisher.fire(E_RECEIVE, message, domain, url, source);
@@ -165,8 +167,8 @@ YUI.add("crossframe", function (Y) {
         Y.log("postMessage(): is executed", "info", MODULE_ID);
         config           = config || {};
         config.timeout   = config.timeout || 1000;
-        config.onSuccess = config.onSuccess || function () {};
-        config.onFail    = config.onFail || function () {};
+        config.onSuccess = config.onSuccess || null;
+        config.onFail    = config.onFail || null;
         config.proxy     = config.proxy || null;
         config.proxy2    = config.proxy2 || null;
 
@@ -205,12 +207,14 @@ YUI.add("crossframe", function (Y) {
             try {
                 target = eval(target);
                 target.postMessage(dataString, "*");
-                window[tId] = config.onSuccess;
-                Y.later(config.timeout, config, function () {
-                    window[tId] = null;
-                    delete window[tId];
-                    this.onFail("Timeout");
-                });
+                if (config.onSuccess) {
+                    window[tId] = config.onSuccess;
+                    Y.later(config.timeout, config, function () {
+                        window[tId] = null;
+                        delete window[tId];
+                        this.onFail("Timeout");
+                    });
+                }
             } catch (e) {
                 Y.log(e.message + " - " + frameString, "error", "CrossFrame");
                 config.onFail(e.message);
