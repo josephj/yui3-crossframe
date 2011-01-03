@@ -39,6 +39,7 @@ YUI.add("crossframe", function (Y) {
          * @param {String} url URL of origin frame
          * @type Event Custom
          */
+        E_METHOD  = "_type",
         E_RECEIVE = "crossframe:message",
         MODULE_ID = "CrossFrame",
         //=============================
@@ -54,6 +55,7 @@ YUI.add("crossframe", function (Y) {
         //=============================
         // Public Methods
         //=============================
+        fire,
         postMessage;
 
     
@@ -72,14 +74,19 @@ YUI.add("crossframe", function (Y) {
             message = data.message;
             domain  = data.domain;
             url     = data.url;
-            source  = data.source;
+            source  = data.source,
+            type    = data[E_METHOD];
 
+        Y.log("_onMessage(). Receive message from App (" + url + ").\n" + message, "info", MODULE_ID);
         if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
             if (window.hasOwnProperty(tid)) {
                 window[tid]();
             }
         } else { // Tell source window this request has been delivered successfully.
             e.source.postMessage("tid=" + tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"), "*");
+            if (type) {
+                Y.fire.apply(Y, [type, message, domain, url, source]);
+            }
             _messagePublisher.fire(E_RECEIVE, message, domain, url, source);
         }
 
@@ -147,6 +154,47 @@ YUI.add("crossframe", function (Y) {
 
         // Append Iframe to document body
         document.body.appendChild(iframeEl);
+    };
+
+    /**
+     * Thanks Jackson Tien's feedback. He provides this convenient solution.
+     * Let crossframe can fire global custom events so we don't have to filter message.
+     *
+     * @for CrossFrame
+     * @method 
+     * @static
+     * @param {String} target    Window object using string "frames['foo']"
+     * @param {String} eventName Custom event name.
+     * @param {Object} data      Message you want to send to target document (In object literal).
+     * @param {Object} config    The most important property is proxy, URL of proxy file.
+     *                           Set this or legend browsers won't work.
+     *                           The page source code should be exactly same with
+     *                           http://josephj.com/project/yui3-crossframe/proxy.html
+     * @property fire
+     * @static
+     */
+    fire = function (target, eventName, data, config) {
+        Y.log("fire() is executed", "info", MODULE_ID);
+
+        data   = data || {};
+        config = config || {};
+
+        if (!target || !type || typeof data !== "object") {
+            return;
+        }
+        var i, 
+            message = "",
+
+        // Parse attribute object into a string
+        params = [];
+        for (i in data) {
+            if (data.hasOwnProperty(i)) {
+                params[params.length] = i + "=" + encodeURIComponent(data[i]);
+            }
+        }
+
+        message = E_METHOD + "=" + eventName + "&" + params.join("&");
+        Y.CrossFrame.postMessage(target, message, config);
     };
 
     /**
@@ -238,6 +286,7 @@ YUI.add("crossframe", function (Y) {
     // Promote CrossFrame to global
     Y.CrossFrame = {
         "postMessage": postMessage,
+        "fire": fire,
         "_messagePublisher": _messagePublisher,
         "messageReceiveEvent" : _messagePublisher
     };

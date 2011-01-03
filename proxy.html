@@ -118,10 +118,12 @@
                 if (data.hasOwnProperty("proxyUrl")) {
                     _postIframeMessage(data.proxyUrl, "tid=" + data.tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"));
                 }
+                if (data.hasOwnProperty("type")) {
+                    Y.fire.apply(Y, [data.type, data.message, data.domain, data.url, data.source]);
+                }
                 Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", data.message, data.domain, data.url, data.source);
             }
         });
-            
     }
 }());
 </script>
