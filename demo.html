@@ -27,9 +27,9 @@ iframe {
         <iframe id="foo-iframe" src="http://josephjiang.com/project/yui3-crossframe/iframe.html" name="foo" width="500" height="500" border="3" frameborder="3"></iframe>
     </div>
     <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
-    <script type="text/javascript" src="crossframe-base.js"></script>
+    <script type="text/javascript" src="crossframe.js"></script>
     <script type="text/javascript">
-    YUI().use("json-parse", "event-custom", "node", "querystring-parse", "json-stringify", "crossframe-base", function (Y) {
+    YUI().use("json-parse", "event-custom", "node", "querystring-parse", "json-stringify", "crossframe", function (Y) {
         Y.one("#foo-iframe").on("load", function (e) {
             Y.log("josephj.com\n\n<iframe/> Load Event");
             var region = e.target.get("viewportRegion");

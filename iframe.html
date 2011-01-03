@@ -44,9 +44,9 @@ ul li {
         <div id="data" class="loading"></div>
     </div>
     <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
-    <script type="text/javascript" src="crossframe-base.js"></script>
+    <script type="text/javascript" src="crossframe.js"></script>
     <script type="text/javascript">
-    YUI().use("node", "event", "json-parse", "event-custom", "crossframe-base", "querystring-parse", function (Y) {
+    YUI().use("node", "event", "json-parse", "event-custom", "crossframe", "querystring-parse", function (Y) {
         Y.Global.on("crossframe:message", function (e, message, domain, url) {
             var data = Y.JSON.parse(message);
             var html = ["<ul>"]; 

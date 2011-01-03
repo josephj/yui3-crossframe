@@ -78,7 +78,7 @@
             targetWindow = eval("parent." + data.target);
             
             // Pass information using YUI 3 custom event
-            targetWindow.YUI().use("event-custom", "crossframe-base", function (Y) {
+            targetWindow.YUI().use("crossframe", function (Y) {
                 Y.CrossFrame._messagePublisher.fire("crossframe:message", data.message, data.domain, data.url);
             });
         }

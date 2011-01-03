@@ -28,9 +28,9 @@ textarea {
 }
 </style>
 <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
-<script type="text/javascript" src="crossframe-base.js"></script>
+<script type="text/javascript" src="crossframe.js"></script>
 <script type="text/javascript">
-YUI().use("crossframe-base", function (Y) {
+YUI().use("crossframe", function (Y) {
     var formNode = Y.one("form");
     formNode.on("submit", function (e) {
         e.preventDefault();
