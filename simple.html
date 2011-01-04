@@ -30,23 +30,26 @@ textarea {
 <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
 <script type="text/javascript" src="crossframe.js"></script>
 <script type="text/javascript">
-YUI().use("crossframe", function (Y) {
+YUI().use("crossframe", "json-stringify", function (Y) {
     var formNode = Y.one("form");
+
     formNode.on("submit", function (e) {
         e.preventDefault();
-        Y.CrossFrame.fire(
-            "frames['simple-iframe']", // 指定要傳送的 Iframe
-            "crossframe:test1",
-            {"value" : formNode.one("textarea").get("value")}, // 指定要傳送的訊息
-            {proxy: "http://josephjiang.com/project/yui3-crossframe/proxy.html"} // 指定給不支援 postMessage 瀏覽器的 proxy 檔案
-        );
+
+        var frameName = "frames['simple-iframe']",
+            message   = formNode.one("textarea").get("value"),
+            config    = {
+                "proxy"        : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
+                "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html",
+                "eventType"    : "crossframe:test1",
+                "callback"     : function (o) {
+                    alert(o.info);
+                    Y.log(o);
+                }
+            };
+
+        Y.CrossFrame.postMessage(frameName, message, config);
         
-        /*
-        Y.CrossFrame.postMessage(
-            formNode.one("textarea").get("value"), // 指定要傳送的訊息
-            {proxy: "http://josephjiang.com/project/yui3-crossframe/proxy.html"} // 指定給不支援 postMessage 瀏覽器的 proxy 檔案
-        );
-        */
     });
 });
 </script>

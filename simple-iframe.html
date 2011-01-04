@@ -45,8 +45,9 @@ ul li {
     <script type="text/javascript" src="crossframe.js"></script>
     <script type="text/javascript">
     YUI().use("crossframe", "event-custom", function (Y) {
-        Y.on("crossframe:test1", function (e, message, domain, url) {
-            alert("hihi");
+        Y.Global.on("crossframe:test1", function (e, data, callback) {
+            Y.one("#data").set("innerHTML", data.message);
+            callback({"info": "some information from receiver. (" + parseInt(new Date().getTime()) + ")"});
         });
     });
     </script>

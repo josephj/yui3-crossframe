@@ -47,8 +47,8 @@ ul li {
     <script type="text/javascript" src="crossframe.js"></script>
     <script type="text/javascript">
     YUI().use("node", "event", "json-parse", "event-custom", "crossframe", "querystring-parse", function (Y) {
-        Y.Global.on("crossframe:message", function (e, message, domain, url) {
-            var data = Y.JSON.parse(message);
+        Y.Global.on("crossframe:message", function (e, o) {
+            var data = Y.JSON.parse(o.message);
             var html = ["<ul>"]; 
             for (var i in data) {
                 html.push("<li>" + i + " = " +  data[i] + "</li>");

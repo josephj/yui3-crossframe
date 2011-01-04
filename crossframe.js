@@ -25,11 +25,11 @@ YUI.add("crossframe", function (Y) {
      * @static
      */
 
-    var _proxyUrl,
-        //=============================
+    var //=============================
         // Constants
         //=============================
-        PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z0-9\-_]*['"])|\d+)\]/,
+        PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]/,
+        E_METHOD  = "_type",
         /**
          * @event crossframe:message
          * @description This event is fired by YUI.CrossFrame when target frame has received message
@@ -39,58 +39,110 @@ YUI.add("crossframe", function (Y) {
          * @param {String} url URL of origin frame
          * @type Event Custom
          */
-        E_METHOD  = "_type",
-        E_RECEIVE = "crossframe:message",
-        MODULE_ID = "CrossFrame",
+        SUCCESS_MESSAGE = "__SUCCESS_CALLBACK__" ,
+        DEFAULT_EVENT   = "crossframe:message",
+        MODULE_ID       = "CrossFrame",
         //=============================
         // Private Events
         //=============================
         _onMessage,
-        _messagePublisher,
         //=============================
         // Private Methods
         //=============================
         _init,
-        _postIframeMessage,
+        //=============================
+        // Public Attribute
+        //=============================
+        messageReceiveEvent,
         //=============================
         // Public Methods
         //=============================
-        fire,
+        appendIframe,
         postMessage;
 
     
 
     /**
      * Handles HTML 5 onmessage event.
-     * It fires Y.CrossFrame._messagePublisher custom event so that user can handles it.
+     * It fires Y.CrossFrame.messageReceiveEvent custom event so that user can handles it.
      * Legend browsers like IE6 doesn't trigger this event.
      *
      * @event _onMessage
+     * @param e
      * @private
      */
     _onMessage =  function (e) {
-        var data    = Y.QueryString.parse(e.data),
-            tid     = data.tid,
-            message = data.message,
-            domain  = data.domain,
-            url     = data.url,
-            source  = data.source,
-            type    = data.type;
+        var evt       = {}, 
+            publisher = null,
+            data      = Y.QueryString.parse(e.data),
+            tid       = data.tid,
+            message   = data.message,
+            eventType = data.eventType,
+            target    = data.target,
+            url       = data.url;
 
 
-        if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
-            if (window.hasOwnProperty(tid)) {
-                window[tid]();
+        // Receive confirmation message, executing prepared onSuccess function 
+        // when receive succssful callback message.
+        if (decodeURIComponent(message) === SUCCESS_MESSAGE) {
+            try {
+                window[tid](data);
+            } catch (e) {
+                Y.log(e.message, "error", MODULE_ID);
             }
-        } else { // Tell source window this request has been delivered successfully.
-            Y.log("_onMessage(). Receive message from App (" + url + ") " + message, "info", MODULE_ID);
-            e.source.postMessage("tid=" + tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"), "*");
-            if (type) {
-                console.log(type);
-                Y.fire.apply(Y, [type, message, domain, url, source]); // Y.CrossFrame.fire();
-            }
-            _messagePublisher.fire(E_RECEIVE, message, domain, url, source);
+            return;
         }
+
+        // Reproduce event object.
+        // Make it very similar with onmessage event object.
+        evt = {
+            "type"        : eventType,
+            "data"        : e.data,
+            "origin"      : e.origin,
+            "lastEventId" : e.lastEventId,
+            "source"      : e.source,
+            "ports"       : e.ports
+        }
+
+        // Prepare callback message function.
+        var _callback = function (o) {
+            var i,
+                query;
+            
+            // Change attribute object to query string.
+            query = [];
+            for (i in o) {
+                // Avoid overwrite.
+                if (i === "url" || i === "target" || i === "tid" || i === "message") {
+                    continue;
+                }
+                o[i] = o[i].toString();
+                query.push(i + "=" + encodeURIComponent(o[i]));    
+            }
+            
+            // Compose information to query string.
+            url = [
+                "url=" + encodeURIComponent(url),
+                "target=" + encodeURIComponent(target),
+                "tid=" + tid,
+                "message=" + encodeURIComponent(Y.CrossFrame.SUCCESS_MESSAGE)
+            ].join("&");
+
+            e.source.postMessage(url + "&" + query.join("&"), "*");
+        };
+
+        // Handle specific message by using Y.on("crossframe:<label>").
+        if (eventType) {
+            publisher = new Y.EventTarget();
+            publisher.publish(eventType, {
+                broadcast:  2,
+                emitFacade: true
+            });
+            publisher.fire(eventType, evt, data, _callback);
+        }
+
+        // Use Y.Global.on("crossframe:message") to handle all messages.
+        messageReceiveEvent.fire(DEFAULT_EVENT, evt, data, _callback);
 
     };
 
@@ -102,15 +154,15 @@ YUI.add("crossframe", function (Y) {
      * setting this event to global is required.
      *
      * @for CrossFrame
-     * @property _messagePublisher
+     * @property messageReceiveEvent
      * @private
      * @static
      */
-    _messagePublisher = (function () {
-        Y.log("_messagePublisher(): is executed", "info", MODULE_ID);
+    messageReceiveEvent = (function () {
+        Y.log("messageReceiveEvent(): is executed", "info", MODULE_ID);
         var _publisher = new Y.EventTarget();
         _publisher.name = "Cross-frame Message Publisher";
-        _publisher.publish(E_RECEIVE, {
+        _publisher.publish(DEFAULT_EVENT, {
             broadcast:  2,    // Not just in this instance.
             emitFacade: true  // Make "this" keyword accessible by user.
         });
@@ -119,14 +171,14 @@ YUI.add("crossframe", function (Y) {
 
 
     /**
-     * Dynamically creating an iframe to simulate HTML5 postMessage method.
+     * Dynamically creating an iframe.
      *
-     * @method _postIframeMessage
-     * @private
+     * @method appendFrame
+     * @public
      * @return void
      */
-    _postIframeMessage = function (proxyUrl, dataString) {
-        Y.log("_postIframeMessage(): is executed", "info", MODULE_ID);
+    appendFrame = function (url) {
+        Y.log("appendFrame(): is executed", "info", MODULE_ID);
 
         var iframeEl,
             iframeNode,
@@ -152,52 +204,10 @@ YUI.add("crossframe", function (Y) {
         });
 
         // Compose iframe URL which includes message
-        iframeEl.src = proxyUrl + "#" + dataString;
+        iframeEl.src = url;
 
         // Append Iframe to document body
         document.body.appendChild(iframeEl);
-    };
-
-    /**
-     * Thanks Jackson Tien's feedback. He provides this convenient solution.
-     * Let crossframe can fire global custom events so we don't have to filter message.
-     *
-     * @for CrossFrame
-     * @method 
-     * @static
-     * @param {String} target    Window object using string "frames['foo']"
-     * @param {String} eventName Custom event name.
-     * @param {Object} data      Message you want to send to target document (In object literal).
-     * @param {Object} config    The most important property is proxy, URL of proxy file.
-     *                           Set this or legend browsers won't work.
-     *                           The page source code should be exactly same with
-     *                           http://josephj.com/project/yui3-crossframe/proxy.html
-     * @property fire
-     * @static
-     */
-    fire = function (target, eventName, data, config) {
-        Y.log("fire() is executed", "info", MODULE_ID);
-
-        data   = data || {};
-        config = config || {};
-
-        if (!target || !eventName || typeof data !== "object") {
-            return;
-        }
-        var i, 
-            message = "",
-
-        // Parse attribute object into a string
-        params = [];
-        for (i in data) {
-            if (data.hasOwnProperty(i)) {
-                params[params.length] = i + "=" + encodeURIComponent(data[i]);
-            }
-        }
-
-        message = params.join("&");
-        config.type = eventName;
-        Y.CrossFrame.postMessage(target, message, config);
     };
 
     /**
@@ -206,94 +216,107 @@ YUI.add("crossframe", function (Y) {
      * @for CrossFrame
      * @method postMessage
      * @static
-     * @param {String} target  Window object using string "frames['foo']"
-     * @param {String} message Message you want to send to target document (frame)
-     * @param {Object} config  The most important property is proxy, URL of proxy file.
-     *                         Set this or legend browsers won't work.
-     *                         The page source code should be exactly same with
-     *                         http://josephj.com/project/yui3-crossframe/proxy.html
+     * @param {String} target Window object using string "frames['foo']"
+     * @param {Mixed} message Message you want to send to target document (frame)
+     * @param {Object} config The most important property is proxy, URL of proxy file.
+     *                        Set this or legend browsers won't work.
+     *                        The page source code should be exactly same with
+     *                        http://josephj.com/project/yui3-crossframe/proxy.html
      * @return void
      */
     postMessage =  function (target, message, config) {
         Y.log("postMessage(): is executed", "info", MODULE_ID);
-        config           = config || {};
-        config.timeout   = config.timeout || 1000;
-        config.onSuccess = config.onSuccess || null;
-        config.onFail    = config.onFail || null;
-        config.proxy     = config.proxy || null;
-        config.proxy2    = config.proxy2 || null;
-        config.type      = config.type || null;
 
-        // Check requirement arguments
+        // Check requirement arguments.
         if (!target || !message) {
-            throw new Error("postMessage Error: You have to provide both target and message arguments.");
+            Y.log("You have to provide both target and message arguments.", "error", MODULE_ID);
+            return;
         }
-        var dataString,
-            frameString,
-            tId,
-            proxyUrl;
-
-        tId = parseInt(new Date().getTime(), 10);
-
-        dataString = [
-            "tid=" + tId,                                    // Trascation ID.
-            "type=" + encodeURIComponent(config.type),       // Event Name
-            "target=" + encodeURIComponent(target),          // Target frame name.
-            "message=" + encodeURIComponent(message),        // User only uses this column.
-            "domain=" + encodeURIComponent(document.domain), // Source domain.
-            "url=" + encodeURIComponent(location.href),      // Source URL.
-            "proxyUrl=" + encodeURIComponent(config.proxy2), // Callback proxy for legend browsers.
-            "source=" + window.name                          // Source frame name.
-                                                             // It might be empty because top window usually doesn't have namei property.
-        ].join("&");
 
         // Check if target string is in right format
         if (!PATTERN.test(target)) {
-            throw new Error("postMessage Error: frame string format error!\n" + target);
+            Y.log("Frame string format error!\n" + target, "error", MODULE_ID);
+            return;
         }
-        if (typeof window.postMessage !== "undefined") {
 
-            // HTML5's way to post message to different frames without domain security restriction
-            frameString = PATTERN.exec(target);
-            target = PATTERN.exec(target);
-            target = target[0];
-            try {
-                target = eval(target);
-                target.postMessage(dataString, "*");
-                if (config.onSuccess) {
-                    window[tId] = config.onSuccess;
-                    Y.later(config.timeout, config, function () {
-                        window[tId] = null;
-                        delete window[tId];
-                        this.onFail("Timeout");
-                    });
-                }
-            } catch (e) {
-                Y.log(e.message + " - " + frameString, "error", "CrossFrame");
-                config.onFail(e.message);
+        // Default attribute object.
+        config              = config || {};
+        config.callback     = config.callback     || null;
+        config.proxy        = config.proxy        || null;
+        config.reverseProxy = config.reverseProxy || null;
+        config.eventType    = config.eventType    || null;
+        if (!config.callback) {
+            config.callback = function (o) {
+                Y.log("postMessage() has been sent to " + o.target  + " successfully. (from " + o.url + ")", "info", MODULE_ID);
             }
-        } else {
+        }
 
-            // Legend browsers like IE 6 or 7 using "iframe in iframe" hack
-            // Get proxy URL
-            if (config.proxy) {
-                proxyUrl = config.proxy;
-            } else {
-                throw new Error("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL");
+        // Message must be transformed to string format.
+        if (typeof message === "Object") {
+            message = Y.JSON.stringify(message);
+        }
+
+        var dataString,
+            frameString,
+            tId;
+
+        // Wrap required data.
+        tId = parseInt(new Date().getTime(), 10);
+        dataString = [
+            "tid=" + tId,                                              // Trasaction ID.
+            "eventType=" + encodeURIComponent(config.eventType),       // Event Name.
+            "target=" + encodeURIComponent(target),                    // Target frame name.
+            "message=" + encodeURIComponent(message),                  // User only uses this column.
+            "domain=" + encodeURIComponent(document.domain),           // Source domain.
+            "url=" + encodeURIComponent(location.href),                // Source URL.
+            "reverseProxy=" + encodeURIComponent(config.reverseProxy), // Callback proxy for legend browsers.
+            "source=" + encodeURIComponent(window.name),               // Source frame name. It might be empty because top window usually doesn't have namei property.
+            // For proxy.html...
+            "origin=" + location.host,
+            "ports=" + location.port
+        ].join("&");
+
+        switch (typeof window.postMessage === "undefined") {
+        case true: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
+
+            // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
+            if (!config.proxy) {
+                Y.log("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL", "error", MODULE_ID);
+                return;
             }
 
             // Create Iframe to send message.
-            _postIframeMessage(proxyUrl, dataString);
+            appendFrame(config.proxy + "#" + dataString);
+            break;
+        case false: // HTML5's way to post message to different frames without domain security restriction
 
+            // Check if the target does exist.
+            try {
+                target = eval(target);
+            } catch (e) {
+                Y.log(e.message, "error", MODULE_ID);
+                return;
+            }
+            
+            target.postMessage(dataString, "*");
+            break;
         }
+
+        // Bind onSuccess function.
+        window[tId] = function (o) {
+            config.callback(o);
+        };
+
+        return tId;
+
     };
 
     // Promote CrossFrame to global
     Y.CrossFrame = {
-        "postMessage": postMessage,
-        "fire": fire,
-        "_messagePublisher": _messagePublisher,
-        "messageReceiveEvent" : _messagePublisher
+        "SUCCESS_MESSAGE"     : SUCCESS_MESSAGE,
+        "appendFrame"         : appendFrame,
+        "messageReceiveEvent" : messageReceiveEvent,
+        "postMessage"         : postMessage
     };
 
     /**
@@ -305,7 +328,7 @@ YUI.add("crossframe", function (Y) {
      * @return void
      */
     _init = function () {
-        Y.log("_init(): is executed", "info", "CrossFrame");
+        Y.log("_init(): is executed", "info", MODULE_ID);
 
         // Supports HTML 5 Web Messaging only.
         if (typeof window.postMessage === "undefined") {
@@ -320,4 +343,4 @@ YUI.add("crossframe", function (Y) {
         }
     };
     _init();
-}, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse"]});
+}, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse", "json-stringify"]});

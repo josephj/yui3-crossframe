@@ -4,62 +4,37 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>Proxy File for YUI CrossFrame Utility</title>
 <script type="text/javascript">
+/*global location */
+/*jslint evil:true */
 /*
- * This file is for the browsers which not implement web messaging. 
- * Currently (2010-10-07) that would be Internet Explorer 6 and 7.
+ * This file is for the browsers which does not implement HTML 5 web messaging. 
+ * Currently (2010-10) that would be Internet Explorer 6 and 7.
  * 
- * You need to place this file under the same domain that the message posts to.
- * For example, you want to send message from a.com to b.com, you need to place this in b.com.
- * I recommend that you should put this file at both domains because message usually flies 
+ * You need to place this file under same domain that message posts to.
+ * For example, you want to send message from a.com to iframe of b.com, you need to place this in b.com.
+ * I recommend that you should put this file at both domains because communication is usually  
  * not just one way.
  *
  * @author Joseph Chiang <josephj6802@gmail.com>
  * @created 2010-10-07
  */ 
-/*global location */
-/*jslint evil:true */
 (function () {
-    var data, 
-        targetWindow,
-        parseQueryString,
-        postIframeMessage,
-        PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/;
-    
-    /**
-     * Dynamically creating an iframe to simulate HTML5 postMessage method.
-     *
-     * @method postIframeMessage
-     * @private
-     * @return void
-     */
-    postIframeMessage = function (proxyUrl, dataString) {
 
-        var iframeEl;
+    var _data, 
+        _targetWindow,
+        //========================
+        // Constants
+        //========================
+        MODULE_ID = "CrossFrame",
+        PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/,
+        //========================
+        // Private Methods
+        //========================
+        _parseQueryString;
 
-        // Create a hidden iframe
-        iframeEl = document.createElement("iframe");
-        iframeEl.style.position   = "absolute";
-        iframeEl.style.top        = "0";
-        iframeEl.style.left       = "0";
-        iframeEl.style.visibility = "hidden";
-        iframeEl.style.width      = "0";
-        iframeEl.style.height     = "0";
-        document.body.appendChild(iframeEl);
-
-        // Remove <iframe/> while it sends request succesfully
-        iframeEl.onload = function () {
-            setTimeout(function () {
-                document.body.removeChild(iframeEl);
-            }, 1000);
-        }
-
-        // Compose iframe URL which includes message
-        iframeEl.src = proxyUrl + "#" + dataString;
-
-        // Append Iframe to document body
-        document.body.appendChild(iframeEl);
-    };
-
+    //========================
+    // Private Methods
+    //========================
     /*
      * Parsing provided location.hash string to object literal
      *
@@ -67,7 +42,7 @@
      * @param hash {String} URL fragment identifier 
      * @return {Object} hash information in object literal format
      */
-    parseQueryString = function (hash) {
+    _parseQueryString = function (hash) {
         var data,
             targetWindow,
             i,
@@ -86,45 +61,120 @@
         return data;
     };
 
+    //========================
+    // Execution
+    //========================
+
     // Parsing current URL fragment identifier to object literal
-    data = parseQueryString(location.hash.substr(1));
+    _data = _parseQueryString(location.hash.substr(1));
 
-    // Execute only when 4 proprties exist
+    // Only execution when required parameter exist.
     if (
-        data.hasOwnProperty("tid") && 
-        data.hasOwnProperty("message")
+        !_data.hasOwnProperty("tid") || 
+        !_data.hasOwnProperty("message") ||
+        !_data.hasOwnProperty("target")
     ) {
-        if (!PATTERN.test(data.target)) {
-            throw new Error("Invalid target: " + data.target);
-        }
+        return;
+    }
 
-        targetWindow = eval("parent." + data.target);
-        
-        // Pass information using YUI 3 custom event
-        if (!targetWindow.YUI) { // App doesn't have YUI.
-            throw new Error("App doesn't include http://a.mimgs.com/bar/api/connector.js script.");
+    // Check if target is a valid window name.
+    if (!PATTERN.test(_data.target)) {
+        throw new Error("Invalid target: " + _data.target);
+        return;
+    }
+
+    // Get window object.
+    targetWindow = eval("parent." + _data.target);
+    
+    // Check if target window has YUI.
+    if (!targetWindow.YUI) {
+        throw new Error("YUI doesn't exist in target page.");
+        return;
+    }
+
+    targetWindow.YUI().use("event-custom", "crossframe", function (Y) {
+        var evt          = {},
+            publisher    = null,
+            tid          = _data.tid,
+            message      = _data.message,
+            eventType    = _data.eventType,
+            target       = _data.target,
+            url          = _data.url,
+            origin       = _data.origin,
+            source       = _data.source,
+            ports        = _data.ports,
+            reverseProxy = _data.reverseProxy;
+
+        // Check if target window has CrossFrame utility.
+        if (!Y.CrossFrame) {
+            throw new Error("Y.CrossFrame doesn't exist.");
             return;
         }
-        targetWindow.YUI().use("event-custom", "crossframe", function (Y) {
-            if (!Y.CrossFrame) {
-                throw new Error("Error: App doesn't include http://a.mimgs.com/bar/api/connector.js script.");
-                return;
-            }
 
-            if (decodeURIComponent(message) === "__SUCCESS_CALLBACK__") { // Source window receives success message.
-                window[data.tid]();
-            } else { // Tell source window this request has been delivered successfully.
-                // TODO: Need another proxyUrl...
-                if (data.hasOwnProperty("proxyUrl")) {
-                    _postIframeMessage(data.proxyUrl, "tid=" + data.tid + "&message=" + encodeURIComponent("__SUCCESS_CALLBACK__"));
-                }
-                if (data.hasOwnProperty("type")) {
-                    Y.fire.apply(Y, [data.type, data.message, data.domain, data.url, data.source]);
-                }
-                Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", data.message, data.domain, data.url, data.source);
+        // Receive confirmation message, executing prepared onSuccess function 
+        // when receive succssful callback message.
+        if (decodeURIComponent(message) === Y.CrossFrame.SUCCESS_MESSAGE) {
+            try {
+                targetWindow[tid](_data);
+            } catch (e) {
+                Y.log(e.message, "error", MODULE_ID);
             }
-        });
-    }
+            return;
+        }
+        
+        // Reproduce event object.
+        // Make it very similar with onmessage event object.
+        evt = {
+            "type"        : eventType,
+            "data"        : _data,
+            "origin"      : null, // TODO
+            "lastEventId" : null,
+            "source"      : source,
+            "ports"       : ports 
+        }
+
+        var _callback = function (o) {
+            var i,
+                query;
+            
+            // Change attribute object to query string.
+            query = [];
+            for (i in o) {
+                // Avoid overwrite.
+                if (i === "url" || i === "target" || i === "tid" || i === "message") {
+                    continue;
+                }
+                o[i] = o[i].toString();
+                query.push(i + "=" + encodeURIComponent(o[i]));    
+            }
+            
+            // Compose information to query string.
+            target = source || "parent";
+            url = [
+                "url=" + encodeURIComponent(url),
+                "target=" + encodeURIComponent(target),
+                "tid=" + tid,
+                "message=" + encodeURIComponent(Y.CrossFrame.SUCCESS_MESSAGE)
+            ].join("&");
+
+            Y.CrossFrame.appendFrame(reverseProxy + "#" + url + "&" + query.join("&"));
+        };
+
+        // Handle specific message by using Y.on("crossframe:<label>").
+        if (eventType) {
+            publisher = new Y.EventTarget();
+            publisher.publish(eventType, {
+                broadcast:  2,
+                emitFacade: true
+            });
+            publisher.fire(eventType, evt, _data, _callback);
+        }
+
+        // Use Y.Global.on("crossframe:message") to handle all messages.
+        Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", evt, _data, _callback);
+
+
+    });
 }());
 </script>
 </head>
