@@ -12,7 +12,7 @@ YUI.add("crossframe", function (Y) {
      * <p>Because there must be browsers which don't support postMessage,
      * you always have to provide a proxy file which is
      * at same domain with the receiving iframe.
-     * Download the proxy file here:
+     * Download the proxy file and put it to the domain you want post messages to.
      * <a href="http://josephj.com/project/yui3-crossframe/proxy.html">
      * http://josephj.com/project/yui3-crossframe/proxy.html</a></p>
      *
@@ -29,19 +29,17 @@ YUI.add("crossframe", function (Y) {
         // Constants
         //=============================
         PATTERN = /top|parent|opener|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]/,
-        E_METHOD  = "_type",
         /**
          * @event crossframe:message
          * @description This event is fired by YUI.CrossFrame when target frame has received message
          * @param {Y.Event.Facade} event An Event Facade object
-         * @param {String} message Message which was sent by origin frame
-         * @param {String} domain Domain of origin frame
-         * @param {String} url URL of origin frame
+         * @param {Object} message Message which was sent by origin frame
+         * @param {Function} callback Make callback to origin window/frame by executing this function in event handler.
          * @type Event Custom
          */
-        SUCCESS_MESSAGE = "__SUCCESS_CALLBACK__",
         DEFAULT_EVENT   = "crossframe:message",
         MODULE_ID       = "CrossFrame",
+        SUCCESS_MESSAGE = "__SUCCESS_CALLBACK__",
         //=============================
         // Private Events
         //=============================
@@ -65,7 +63,7 @@ YUI.add("crossframe", function (Y) {
     /**
      * Handles HTML 5 onmessage event.
      * It fires Y.CrossFrame.messageReceiveEvent custom event so that user can handles it.
-     * Legend browsers like IE6 doesn't trigger this event.
+     * Legend browser like IE6 doesn't trigger this event.
      *
      * @event _onMessage
      * @param e
@@ -73,14 +71,14 @@ YUI.add("crossframe", function (Y) {
      */
     _onMessage =  function (e) {
         var evt       = {}, 
-            _callback = null,
+            callback  = null,
             publisher = null,
             data      = Y.QueryString.parse(e.data),
             tid       = data.tid,
             message   = data.message,
             eventType = data.eventType,
             target    = data.target,
-            url       = data.url;
+            sourceUrl = data.url;
 
 
         // Receive confirmation message, executing prepared onSuccess function 
@@ -106,7 +104,7 @@ YUI.add("crossframe", function (Y) {
         };
 
         // Prepare callback message function.
-        _callback = function (o) {
+        callback = function (o) {
             var i,
                 query;
             
@@ -125,7 +123,7 @@ YUI.add("crossframe", function (Y) {
             
             // Compose information to query string.
             url = [
-                "url=" + encodeURIComponent(url),
+                "url=" + encodeURIComponent(sourceUrl),
                 "target=" + encodeURIComponent(target),
                 "tid=" + tid,
                 "message=" + encodeURIComponent(Y.CrossFrame.SUCCESS_MESSAGE)
@@ -141,11 +139,11 @@ YUI.add("crossframe", function (Y) {
                 broadcast:  2,
                 emitFacade: true
             });
-            publisher.fire(eventType, evt, data, _callback);
+            publisher.fire(eventType, evt, data, callback);
         }
 
         // Use Y.Global.on("crossframe:message") to handle all messages.
-        messageReceiveEvent.fire(DEFAULT_EVENT, evt, data, _callback);
+        messageReceiveEvent.fire(DEFAULT_EVENT, evt, data, callback);
 
     };
 
@@ -230,13 +228,13 @@ YUI.add("crossframe", function (Y) {
     postMessage =  function (target, message, config) {
         Y.log("postMessage(): is executed", "info", MODULE_ID);
 
-        // Check requirement arguments.
+        // Check required arguments.
         if (!target || !message) {
             Y.log("You have to provide both target and message arguments.", "error", MODULE_ID);
             return;
         }
 
-        // Check if target string is in right format
+        // Check if target string is in right format.
         if (!PATTERN.test(target)) {
             Y.log("Frame string format error!\n" + target, "error", MODULE_ID);
             return;
@@ -248,11 +246,6 @@ YUI.add("crossframe", function (Y) {
         config.proxy        = config.proxy        || null;
         config.reverseProxy = config.reverseProxy || null;
         config.eventType    = config.eventType    || null;
-        if (!config.callback) {
-            config.callback = function (o) {
-                Y.log("postMessage() has been sent to " + o.target  + " successfully. (from " + o.url + ")", "info", MODULE_ID);
-            };
-        }
 
         // Message must be transformed to string format.
         if (typeof message === "Object") {
@@ -279,14 +272,10 @@ YUI.add("crossframe", function (Y) {
             "ports=" + location.port
         ].join("&");
 
-        // Only bind event once.
-        if (_init) {
-            _init();
-            _init = null;
-        }
-
-        switch (typeof window.postMessage === "undefined" || target === "opener") {
-        case true: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
+        isSupport = (typeof window.postMessage === "undefined" ? false : true);
+        isSupport = (target === "opener" && Y.UA.ie ? true : isSupport);
+        switch (isSupport) {
+        case false: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
 
             // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
             if (!config.proxy) {
@@ -297,8 +286,7 @@ YUI.add("crossframe", function (Y) {
             // Create Iframe to send message.
             appendFrame(config.proxy + "#" + dataString);
             break;
-        case false: // HTML5's way to post message to different frames without domain security restriction
-
+        case true: // HTML5's way to post message to different frames without domain security restriction
             // Check if the target does exist.
             try {
                 target = eval(target);
@@ -345,5 +333,6 @@ YUI.add("crossframe", function (Y) {
             window.attachEvent("onmessage", _onMessage);
         }
     };
+    _init();
 
 }, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse", "json-stringify"]});
