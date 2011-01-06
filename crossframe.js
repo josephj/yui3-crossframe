@@ -28,7 +28,7 @@ YUI.add("crossframe", function (Y) {
     var //=============================
         // Constants
         //=============================
-        PATTERN = /top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]/,
+        PATTERN = /top|parent|opener|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]/,
         E_METHOD  = "_type",
         /**
          * @event crossframe:message
@@ -39,7 +39,7 @@ YUI.add("crossframe", function (Y) {
          * @param {String} url URL of origin frame
          * @type Event Custom
          */
-        SUCCESS_MESSAGE = "__SUCCESS_CALLBACK__" ,
+        SUCCESS_MESSAGE = "__SUCCESS_CALLBACK__",
         DEFAULT_EVENT   = "crossframe:message",
         MODULE_ID       = "CrossFrame",
         //=============================
@@ -57,7 +57,7 @@ YUI.add("crossframe", function (Y) {
         //=============================
         // Public Methods
         //=============================
-        appendIframe,
+        appendFrame,
         postMessage;
 
     
@@ -73,6 +73,7 @@ YUI.add("crossframe", function (Y) {
      */
     _onMessage =  function (e) {
         var evt       = {}, 
+            _callback = null,
             publisher = null,
             data      = Y.QueryString.parse(e.data),
             tid       = data.tid,
@@ -87,8 +88,8 @@ YUI.add("crossframe", function (Y) {
         if (decodeURIComponent(message) === SUCCESS_MESSAGE) {
             try {
                 window[tid](data);
-            } catch (e) {
-                Y.log(e.message, "error", MODULE_ID);
+            } catch (e2) {
+                Y.log(e2.message, "error", MODULE_ID);
             }
             return;
         }
@@ -102,22 +103,24 @@ YUI.add("crossframe", function (Y) {
             "lastEventId" : e.lastEventId,
             "source"      : e.source,
             "ports"       : e.ports
-        }
+        };
 
         // Prepare callback message function.
-        var _callback = function (o) {
+        _callback = function (o) {
             var i,
                 query;
             
             // Change attribute object to query string.
             query = [];
             for (i in o) {
-                // Avoid overwrite.
-                if (i === "url" || i === "target" || i === "tid" || i === "message") {
-                    continue;
+                if (o.hasOwnProperty(i)) {
+                    // Avoid overwrite.
+                    if (i === "url" || i === "target" || i === "tid" || i === "message") {
+                        continue;
+                    }
+                    o[i] = o[i].toString();
+                    query.push(i + "=" + encodeURIComponent(o[i]));    
                 }
-                o[i] = o[i].toString();
-                query.push(i + "=" + encodeURIComponent(o[i]));    
             }
             
             // Compose information to query string.
@@ -248,7 +251,7 @@ YUI.add("crossframe", function (Y) {
         if (!config.callback) {
             config.callback = function (o) {
                 Y.log("postMessage() has been sent to " + o.target  + " successfully. (from " + o.url + ")", "info", MODULE_ID);
-            }
+            };
         }
 
         // Message must be transformed to string format.
@@ -276,7 +279,13 @@ YUI.add("crossframe", function (Y) {
             "ports=" + location.port
         ].join("&");
 
-        switch (typeof window.postMessage === "undefined") {
+        // Only bind event once.
+        if (_init) {
+            _init();
+            _init = null;
+        }
+
+        switch (typeof window.postMessage !== "undefined" || target === "opener") {
         case true: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
 
             // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
@@ -330,12 +339,6 @@ YUI.add("crossframe", function (Y) {
     _init = function () {
         Y.log("_init(): is executed", "info", MODULE_ID);
 
-        // Supports HTML 5 Web Messaging only.
-        if (typeof window.postMessage === "undefined") {
-            return;
-        }
-
-        // FIXME : Can't use Y.on directly to attach event listener, why?
         if (typeof window.addEventListener !== "undefined") {
             window.addEventListener("message", _onMessage, false);
         } else if (typeof window.attachEvent !== "undefined") {

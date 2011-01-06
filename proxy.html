@@ -21,12 +21,12 @@
 (function () {
 
     var _data, 
-        _targetWindow,
+        targetWindow,
         //========================
         // Constants
         //========================
         MODULE_ID = "CrossFrame",
-        PATTERN = /^(?:(?:(top|parent|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/,
+        PATTERN = /^(?:(?:(top|parent|opener|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]))(?:\.|$))+/,
         //========================
         // Private Methods
         //========================
@@ -44,7 +44,6 @@
      */
     _parseQueryString = function (hash) {
         var data,
-            targetWindow,
             i,
             j,
             items,
@@ -80,7 +79,6 @@
     // Check if target is a valid window name.
     if (!PATTERN.test(_data.target)) {
         throw new Error("Invalid target: " + _data.target);
-        return;
     }
 
     // Get window object.
@@ -89,11 +87,12 @@
     // Check if target window has YUI.
     if (!targetWindow.YUI) {
         throw new Error("YUI doesn't exist in target page.");
-        return;
     }
 
+    // FIXME: IE8 using opener stops execution here with unknown reason.
     targetWindow.YUI().use("event-custom", "crossframe", function (Y) {
         var evt          = {},
+            callback     = null,
             publisher    = null,
             tid          = _data.tid,
             message      = _data.message,
@@ -108,7 +107,6 @@
         // Check if target window has CrossFrame utility.
         if (!Y.CrossFrame) {
             throw new Error("Y.CrossFrame doesn't exist.");
-            return;
         }
 
         // Receive confirmation message, executing prepared onSuccess function 
@@ -131,21 +129,27 @@
             "lastEventId" : null,
             "source"      : source,
             "ports"       : ports 
-        }
+        };
 
-        var _callback = function (o) {
+        callback = function (o) {
+            if (!reverseProxy) {
+                callback = null;
+                return;
+            }
             var i,
                 query;
             
             // Change attribute object to query string.
             query = [];
             for (i in o) {
-                // Avoid overwrite.
-                if (i === "url" || i === "target" || i === "tid" || i === "message") {
-                    continue;
+                if (o.hasOwnProperty(i)) {
+                    // Avoid overwrite.
+                    if (i === "url" || i === "target" || i === "tid" || i === "message") {
+                        continue;
+                    }
+                    o[i] = o[i].toString();
+                    query.push(i + "=" + encodeURIComponent(o[i]));    
                 }
-                o[i] = o[i].toString();
-                query.push(i + "=" + encodeURIComponent(o[i]));    
             }
             
             // Compose information to query string.
@@ -167,12 +171,11 @@
                 broadcast:  2,
                 emitFacade: true
             });
-            publisher.fire(eventType, evt, _data, _callback);
+            publisher.fire(eventType, evt, _data, callback);
         }
 
         // Use Y.Global.on("crossframe:message") to handle all messages.
-        Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", evt, _data, _callback);
-
+        Y.CrossFrame.messageReceiveEvent.fire("crossframe:message", evt, _data, callback);
 
     });
 }());
