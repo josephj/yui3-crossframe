@@ -285,7 +285,7 @@ YUI.add("crossframe", function (Y) {
             _init = null;
         }
 
-        switch (typeof window.postMessage !== "undefined" || target === "opener") {
+        switch (typeof window.postMessage === "undefined" || target === "opener") {
         case true: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
 
             // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
@@ -345,5 +345,5 @@ YUI.add("crossframe", function (Y) {
             window.attachEvent("onmessage", _onMessage);
         }
     };
-    _init();
+
 }, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse", "json-stringify"]});
