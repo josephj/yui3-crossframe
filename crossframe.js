@@ -273,7 +273,7 @@ YUI.add("crossframe", function (Y) {
         ].join("&");
 
         isSupport = (typeof window.postMessage === "undefined" ? false : true);
-        isSupport = (target === "opener" && Y.UA.ie ? true : isSupport);
+        isSupport = (target === "opener" && Y.UA.ie ? false : isSupport); // IE doesn't support postMessage to opener
         switch (isSupport) {
         case false: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
 
@@ -301,6 +301,10 @@ YUI.add("crossframe", function (Y) {
 
         // Bind onSuccess function.
         window[tId] = function (o) {
+            delete o.message;
+            delete o.target;
+            delete o.tid;
+            delete o.url;
             config.callback(o);
         };
 
