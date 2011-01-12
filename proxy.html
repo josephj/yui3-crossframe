@@ -4,7 +4,7 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>Proxy File for YUI CrossFrame Utility</title>
 <script type="text/javascript">
-/*global location */
+/*global location, window, top */
 /*jslint evil:true */
 /*
  * This file is for the browsers which does not implement HTML 5 web messaging. 
@@ -166,12 +166,19 @@
 
         // Handle specific message by using Y.on("crossframe:<label>").
         if (eventType) {
-            publisher = new Y.EventTarget();
-            publisher.publish(eventType, {
-                broadcast:  2,
-                emitFacade: true
-            });
-            publisher.fire(eventType, evt, _data, callback);
+            // FIXME: Something wrong here, should be YUI callback problem.
+            try {
+                publisher = new Y.EventTarget();
+                publisher.publish(eventType, {
+                    broadcast:  2,
+                    emitFacade: true
+                });
+                publisher.fire(eventType, evt, _data, callback);
+            } catch (e2) {
+                window.alert(e2.message);
+                Y.log(e2.message, "error", MODULE_ID);
+                top.location.reload(true);
+            }
         }
 
         // Use Y.Global.on("crossframe:message") to handle all messages.
