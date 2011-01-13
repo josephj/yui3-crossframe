@@ -24,7 +24,7 @@ h1 {
     padding: 5px;
 }
 </style>
-<script type="text/javascript" src="../../lab/yui3-opener-proxy-bug/yui-debug.js"></script> 
+<script type="text/javascript" src="../../lab/yui3-opener-proxy-bug/yui-debug-fix.js"></script> 
 <script type="text/javascript" src="crossframe.js"></script>
 <script type="text/javascript">
 YUI().use("crossframe", function (Y) {
@@ -32,12 +32,12 @@ YUI().use("crossframe", function (Y) {
         e.preventDefault();
 
         var node = this,
-            loginWindow = window.open("http://josephjiang.com/project/yui3-crossframe/login.html", "popup_login", "width=500, height=200");
+            loginWindow = window.open("http://josephjiang.com/project/yui3-crossframe/login-fix.html", "popup_login", "width=500, height=200");
 
         Y.Global.on("crossframe:after-login", function (e, message, callback) {
 
             // Let login window can do something.
-            callback({"result": "success"});
+//            callback({"result": "success"});
 
             // Do something for myself.
             if (node) { 
@@ -57,7 +57,7 @@ YUI().use("crossframe", function (Y) {
     <h1>Y.CrossFrame Open Example</h1>
     <div class="location">Host: josephj.com</div>
     <div>
-        <a class="login-link" href="login.html">Login</a> (http://josephjiang.com/project/yui3-crossframe/login.html)
+        <a class="login-link" href="login-fix.html">Login</a> (http://josephjiang.com/project/yui3-crossframe/login-fix.html)
     </div>
 
 </body>

@@ -157,7 +157,9 @@ YUI.add("crossframe", function (Y) {
      * @return {Y.EventTarget}
      */
     addPublisher = function (eventType, eventName) {
+        Y.log("addPublisher() is executed.", "info", MODULE_ID);
         var publisher = new Y.EventTarget();
+        eventName = eventName || "";
         publisher.name = eventName;
         publisher.publish(eventType, {
             broadcast:  2,

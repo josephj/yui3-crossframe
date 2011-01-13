@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-tw">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Cross Frame Prototype</title>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssfonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssbase/base-min.css">
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-weight: bold;
+}
+.location {
+    font-size: 123.1%;
+    font-weight: bold;
+    color: red;
+    background: yellow;
+    margin-bottom: 10px;
+    padding: 5px;
+}
+</style>
+<script type="text/javascript" src="../../lab/yui3-opener-proxy-bug/yui-debug-fix.js"></script>
+<script type="text/javascript" src="crossframe.js"></script>
+<script type="text/javascript">
+YUI().use("crossframe", "node-base", function (Y) {
+        Y.on("submit", function (e) {
+            e.preventDefault();
+            if (this.get("userid").get("value") === "admin" && this.get("password").get("value")) {
+                Y.CrossFrame.postMessage("opener", "success", {
+                    "proxy"       : "http://josephj.com/project/yui3-crossframe/proxy.html",
+                    "reverseProxy": "http://josephjiang.com/project/yui3-crossframe/proxy.html",
+                    "eventType"   : "crossframe:after-login",
+                    "callback"    : function (o) {
+                        alert(o.result);
+                    }
+
+                });
+            }
+        }, "form");
+});
+</script>
+</head>
+<body>
+
+    <h1>Y.CrossFrame Open Example</h1>
+    <div class="location">Host: josephjiang.com</div>
+    <form>
+        <label>User ID: </label>
+        <input type="text" name="userid" value="admin">(admin)<br>
+        <label>Password: </label>
+        <input type="password" name="password" value="admin">(admin)<br>
+        <input type="submit" value="Submit">
+    </form>
+
+</body>
+</html>
