@@ -166,19 +166,8 @@
 
         // Handle specific message by using Y.on("crossframe:<label>").
         if (eventType) {
-            // FIXME: Something wrong here, should be YUI callback problem.
-            try {
-                publisher = new Y.EventTarget();
-                publisher.publish(eventType, {
-                    broadcast:  2,
-                    emitFacade: true
-                });
-                publisher.fire(eventType, evt, _data, callback);
-            } catch (e2) {
-                window.alert(e2.message);
-                Y.log(e2.message, "error", MODULE_ID);
-                top.location.reload(true);
-            }
+            publisher = Y.CrossFrame.addPublisher(eventType);
+            publisher.fire(eventType, evt, _data, callback);
         }
 
         // Use Y.Global.on("crossframe:message") to handle all messages.

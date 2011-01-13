@@ -55,6 +55,7 @@ YUI.add("crossframe", function (Y) {
         //=============================
         // Public Methods
         //=============================
+        addPublisher,
         appendFrame,
         postMessage;
 
@@ -134,11 +135,7 @@ YUI.add("crossframe", function (Y) {
 
         // Handle specific message by using Y.on("crossframe:<label>").
         if (eventType) {
-            publisher = new Y.EventTarget();
-            publisher.publish(eventType, {
-                broadcast:  2,
-                emitFacade: true
-            });
+            publisher = addPublisher(eventType);
             publisher.fire(eventType, evt, data, callback);
         }
 
@@ -161,15 +158,31 @@ YUI.add("crossframe", function (Y) {
      */
     messageReceiveEvent = (function () {
         Y.log("messageReceiveEvent(): is executed", "info", MODULE_ID);
-        var _publisher = new Y.EventTarget();
-        _publisher.name = "Cross-frame Message Publisher";
-        _publisher.publish(DEFAULT_EVENT, {
-            broadcast:  2,    // Not just in this instance.
-            emitFacade: true  // Make "this" keyword accessible by user.
-        });
-        return _publisher;
+        return addPublisher(DEFAULT_EVENT, "Cross-frame Message Publisher");
     }());
 
+
+    //=============================
+    // Public Methods
+    //=============================
+    /**
+     * Add custom event publisher.
+     *
+     * @method addPublisher
+     * @public
+     * @parame {String} eventType Custom Event type.
+     * @parame {String} eventName Custom Event name.
+     * @return {Y.EventTarget}
+     */
+    addPublisher = function (eventType, eventName) {
+        var publisher = new Y.EventTarget();
+        publisher.name = eventName;
+        publisher.publish(eventType, {
+            broadcast:  2,
+            emitFacade: true
+        });
+        return publisher;
+    };
 
     /**
      * Dynamically creating an iframe.
@@ -315,6 +328,7 @@ YUI.add("crossframe", function (Y) {
     // Promote CrossFrame to global
     Y.CrossFrame = {
         "SUCCESS_MESSAGE"     : SUCCESS_MESSAGE,
+        "addPublisher"        : addPublisher,
         "appendFrame"         : appendFrame,
         "messageReceiveEvent" : messageReceiveEvent,
         "postMessage"         : postMessage
