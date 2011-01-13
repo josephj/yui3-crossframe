@@ -144,24 +144,6 @@ YUI.add("crossframe", function (Y) {
 
     };
 
-    /**
-     * Create a event publisher to set custom event.
-     * The reason to use custom event is to wrap onmessage event for simplification.
-     * All browsers use Y.Global.on("crossframe:message", fn) to receive message.
-     * Because the custom event will be accessed in different YUI instance,
-     * setting this event to global is required.
-     *
-     * @for CrossFrame
-     * @property messageReceiveEvent
-     * @private
-     * @static
-     */
-    messageReceiveEvent = (function () {
-        Y.log("messageReceiveEvent(): is executed", "info", MODULE_ID);
-        return addPublisher(DEFAULT_EVENT, "Cross-frame Message Publisher");
-    }());
-
-
     //=============================
     // Public Methods
     //=============================
@@ -324,6 +306,28 @@ YUI.add("crossframe", function (Y) {
         return tId;
 
     };
+
+    //=============================
+    // Public Attributes
+    //=============================
+    /**
+     * Create a event publisher to set custom event.
+     * The reason to use custom event is to wrap onmessage event for simplification.
+     * All browsers use Y.Global.on("crossframe:message", fn) to receive message.
+     * Because the custom event will be accessed in different YUI instance,
+     * setting this event to global is required.
+     *
+     * @for CrossFrame
+     * @property messageReceiveEvent
+     * @private
+     * @static
+     */
+    messageReceiveEvent = (function () {
+        Y.log("messageReceiveEvent(): is executed", "info", MODULE_ID);
+        return addPublisher(DEFAULT_EVENT, "Cross-frame Message Publisher");
+    }());
+
+
 
     // Promote CrossFrame to global
     Y.CrossFrame = {
