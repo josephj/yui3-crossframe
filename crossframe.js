@@ -25,7 +25,8 @@ YUI.add("crossframe", function (Y) {
      * @static
      */
 
-    var //=============================
+    var _openerObject,
+        //=============================
         // Constants
         //=============================
         PATTERN = /top|parent|opener|frames\[(?:(?:['"][a-zA-Z\d-_]*['"])|\d+)\]/,
@@ -47,6 +48,7 @@ YUI.add("crossframe", function (Y) {
         //=============================
         // Private Methods
         //=============================
+        _messageReceiveAdapter,
         _init,
         //=============================
         // Public Attribute
@@ -57,9 +59,10 @@ YUI.add("crossframe", function (Y) {
         //=============================
         addPublisher,
         appendFrame,
-        postMessage;
+        postMessage,
+        setOpener;
 
-    
+
 
     /**
      * Handles HTML 5 onmessage event.
@@ -70,8 +73,8 @@ YUI.add("crossframe", function (Y) {
      * @param e
      * @private
      */
-    _onMessage =  function (e) {
-        var evt       = {}, 
+    _onMessage =  function (e, isOpener) {
+        var evt       = {},
             callback  = null,
             publisher = null,
             data      = Y.QueryString.parse(e.data),
@@ -81,8 +84,7 @@ YUI.add("crossframe", function (Y) {
             target    = data.target,
             sourceUrl = data.url;
 
-
-        // Receive confirmation message, executing prepared onSuccess function 
+        // Receive confirmation message, executing prepared onSuccess function
         // when receive succssful callback message.
         if (decodeURIComponent(message) === SUCCESS_MESSAGE) {
             try {
@@ -94,7 +96,7 @@ YUI.add("crossframe", function (Y) {
         }
 
         // Reproduce event object.
-        // Make it very similar with onmessage event object.
+        // Make it be very similar with onmessage event object.
         evt = {
             "type"        : eventType,
             "data"        : e.data,
@@ -107,8 +109,9 @@ YUI.add("crossframe", function (Y) {
         // Prepare callback message function.
         callback = function (o) {
             var i,
-                query;
-            
+                query,
+                message;
+
             // Change attribute object to query string.
             query = [];
             for (i in o) {
@@ -118,10 +121,10 @@ YUI.add("crossframe", function (Y) {
                         continue;
                     }
                     o[i] = o[i].toString();
-                    query.push(i + "=" + encodeURIComponent(o[i]));    
+                    query.push(i + "=" + encodeURIComponent(o[i]));
                 }
             }
-            
+
             // Compose information to query string.
             url = [
                 "url=" + encodeURIComponent(sourceUrl),
@@ -130,7 +133,13 @@ YUI.add("crossframe", function (Y) {
                 "message=" + encodeURIComponent(Y.CrossFrame.SUCCESS_MESSAGE)
             ].join("&");
 
-            e.source.postMessage(url + "&" + query.join("&"), "*");
+            if (isOpener) {
+                // alert(url + "&" + query.join("&"));
+                // FIXME: window[tid] ?
+                window.opener.messageCallbackAdapter(url + "&" + query.join("&"));
+            } else {
+                e.source.postMessage(url + "&" + query.join("&"), "*");
+            }
         };
 
         // Handle specific message by using Y.on("crossframe:<label>").
@@ -251,7 +260,9 @@ YUI.add("crossframe", function (Y) {
 
         var dataString,
             frameString,
-            tId;
+            tId,
+            openerObject;
+
 
         // Wrap required data.
         tId = parseInt(new Date().getTime(), 10);
@@ -269,33 +280,6 @@ YUI.add("crossframe", function (Y) {
             "ports=" + location.port
         ].join("&");
 
-        isSupport = (typeof window.postMessage === "undefined" ? false : true);
-        isSupport = (target === "opener" && Y.UA.ie ? false : isSupport); // IE doesn't support postMessage to opener
-        switch (isSupport) {
-        case false: // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
-
-            // Legend browsers like IE 6 or 7 using "iframe in iframe" hack.
-            if (!config.proxy) {
-                Y.log("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL", "error", MODULE_ID);
-                return;
-            }
-
-            // Create Iframe to send message.
-            appendFrame(config.proxy + "#" + dataString);
-            break;
-        case true: // HTML5's way to post message to different frames without domain security restriction
-            // Check if the target does exist.
-            try {
-                target = eval(target);
-            } catch (e) {
-                Y.log(e.message, "error", MODULE_ID);
-                return;
-            }
-            
-            target.postMessage(dataString, "*");
-            break;
-        }
-
         // Bind onSuccess function.
         window[tId] = function (o) {
             delete o.message;
@@ -305,8 +289,71 @@ YUI.add("crossframe", function (Y) {
             config.callback(o);
         };
 
+        isSupport = (typeof window.postMessage === "undefined" ? false : true);
+        isSupport = (target === "opener" && Y.UA.ie ? false : isSupport); // IE doesn't support postMessage to opener
+        switch (isSupport) {
+        case false: // Situation that not support HTML5 postMessage, including IE8 opener issue.
+
+            // IE8 supports window.postMessage method for frame/iframe, however, not for opener situation.
+            // We need to use iframe in iframe approach to achieve this.
+            if (target === "opener") {
+                if (!config.proxy) {
+                    Y.log("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL", "error", MODULE_ID);
+                    return;
+                }
+                appendFrame(config.proxy + "#" + dataString);
+
+            // Use IE 6,7 opener bug to send message.
+            } else {
+                _openerObject.messageReceiveAdapter(dataString, window);
+            }
+            break;
+        case true: // HTML5's way to post message to different frames without domain security restriction
+            // Check if the target does exist.
+            try {
+                target = eval(target);
+            } catch (e) {
+                Y.log(e.message, "error", MODULE_ID);
+                return;
+            }
+
+            target.postMessage(dataString, "*");
+            break;
+        }
+
         return tId;
 
+    };
+
+
+    setOpener = function (frameId) {
+        if (typeof window.postMessage !== "undefined") {
+            return;
+        }
+        if (window.name.toString() !== frameId) {
+            var iframeEl = document.getElementById(frameId);
+            if (!iframeEl) {
+                return false;
+            }
+            _openerObject = {
+                messageCallbackAdapter : function (dataString) {
+                    // Reproduce event object.
+                    var data = Y.QueryString.parse(dataString);
+                    if (decodeURIComponent(data.message) !== SUCCESS_MESSAGE) {
+                        return;
+                    }
+                    
+                    window[data.tid](data);
+                }
+            };
+            iframeEl.contentWindow.opener = _openerObject;
+            return true;
+        } else {
+            window.opener.messageReceiveAdapter = _messageReceiveAdapter;
+            return true;
+
+        }
+        setOpener = null;
     };
 
     //=============================
@@ -337,12 +384,42 @@ YUI.add("crossframe", function (Y) {
         "addPublisher"        : addPublisher,
         "appendFrame"         : appendFrame,
         "messageReceiveEvent" : messageReceiveEvent,
-        "postMessage"         : postMessage
+        "postMessage"         : postMessage,
+        "setOpener"           : setOpener
     };
+
+    /*
+     * Triggered when this page receives Y.CrossFrame message.
+     * This method is for prepareing required arguments for _onMesssage.
+     *
+     * @method _messageReceiveAdapter
+     * @private
+     * @param {String} dataString Data in query string.
+     * @param {Window} sourceWin  source window object.
+     * @return void
+     */
+    _messageReceiveAdapter = function (dataString, sourceWin) {
+        Y.log("_messageReceiveAdapter() is executed.", "info", MODULE_ID);
+
+        // Reproduce event object.
+        var evt  = {},
+            data = Y.QueryString.parse(dataString);
+
+        evt = {
+            "type"        : data.eventType,
+            "data"        : dataString,
+            "origin"      : data.origin,
+            "lastEventId" : data.tid,
+            "source"      : sourceWin,
+            "ports"       : data.ports
+        };
+
+        _onMessage(evt, sourceWin);
+    }
 
     /**
      * Initialization for CrossFrame utility
-     * It's only useful if host page is receiver and browser has implemented postMessage.
+     * This method works when current page receve CrossFrame message, usually in Iframe.
      *
      * @method _init
      * @private
@@ -350,10 +427,9 @@ YUI.add("crossframe", function (Y) {
      */
     _init = function () {
         Y.log("_init(): is executed", "info", MODULE_ID);
-
-        if (typeof window.addEventListener !== "undefined") {
+        if (typeof window.addEventListener !== "undefined") {   // W3C browsers.
             window.addEventListener("message", _onMessage, false);
-        } else if (typeof window.attachEvent !== "undefined") {
+        } else if (typeof window.attachEvent !== "undefined" && Y.UA.ie >= 8) { // IE browsers.
             window.attachEvent("onmessage", _onMessage);
         }
     };

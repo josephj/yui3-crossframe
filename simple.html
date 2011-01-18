@@ -32,23 +32,18 @@ textarea {
 <script type="text/javascript">
 YUI().use("crossframe", "json-stringify", function (Y) {
     var formNode = Y.one("form");
-
+    Y.CrossFrame.setOpener("simple-iframe");
     formNode.on("submit", function (e) {
         e.preventDefault();
-
         var frameName = "frames['simple-iframe']",
             message   = formNode.one("textarea").get("value"),
             config    = {
-                "proxy"        : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
-                "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html",
                 "eventType"    : "crossframe:test1",
                 "callback"     : function (o) {
                     alert(o.info);
                 }
             };
-
         Y.CrossFrame.postMessage(frameName, message, config);
-        
     });
 });
 </script>

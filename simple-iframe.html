@@ -49,6 +49,7 @@ ul li {
             Y.one("#data").set("innerHTML", data.message);
             callback({"info": "some information from receiver. (" + parseInt(new Date().getTime()) + ")"});
         });
+        Y.CrossFrame.setOpener("simple-iframe");
     });
     </script>
 </body>
