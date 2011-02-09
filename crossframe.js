@@ -48,6 +48,7 @@ YUI.add("crossframe", function (Y) {
         //=============================
         // Private Methods
         //=============================
+        _messageCallbackAdapter,
         _messageReceiveAdapter,
         _init,
         //=============================
@@ -296,7 +297,7 @@ YUI.add("crossframe", function (Y) {
 
             // IE8 supports window.postMessage method for frame/iframe, however, not for opener situation.
             // We need to use iframe in iframe approach to achieve this.
-            if (target === "opener") {
+            if (target === "opener" || !_openerObject) {
                 if (!config.proxy) {
                     Y.log("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL", "error", MODULE_ID);
                     return;
@@ -326,32 +327,24 @@ YUI.add("crossframe", function (Y) {
     };
 
 
-    setOpener = function (frameId) {
+    setOpener = function (targetFrameName) {
+
+        // Don't continue if HTML5 postMessage is available.
         if (typeof window.postMessage !== "undefined") {
             return;
         }
-        if (window.name.toString() !== frameId) {
-            var iframeEl = document.getElementById(frameId);
-            if (!iframeEl) {
-                return false;
-            }
-            _openerObject = {
-                messageCallbackAdapter : function (dataString) {
-                    // Reproduce event object.
-                    var data = Y.QueryString.parse(dataString);
-                    if (decodeURIComponent(data.message) !== SUCCESS_MESSAGE) {
-                        return;
-                    }
-                    
-                    window[data.tid](data);
-                }
-            };
-            iframeEl.contentWindow.opener = _openerObject;
-            return true;
-        } else {
-            window.opener.messageReceiveAdapter = _messageReceiveAdapter;
-            return true;
 
+        // Detect if this page is source or target.
+        if (window.name.toString() === targetFrameName) { // Target page.
+            window.opener.messageReceiveAdapter = _messageReceiveAdapter;
+        } else { // Source Page.
+            var iframeEl = document.getElementByName(targetFrameName);
+            if (!iframeEl) {
+                Y.error("The target iframe doesn't exist");
+            }
+            _openerObject = {};
+            _openerObject.messageCallbackAdapter = _messageCallbackAdapter
+            iframeEl.contentWindow.opener = _openerObject;
         }
         setOpener = null;
     };
@@ -386,6 +379,14 @@ YUI.add("crossframe", function (Y) {
         "messageReceiveEvent" : messageReceiveEvent,
         "postMessage"         : postMessage,
         "setOpener"           : setOpener
+    };
+
+    _messageCallbackAdapter = function (dataString) {
+        var data = Y.QueryString.parse(dataString);
+        if (decodeURIComponent(data.message) !== SUCCESS_MESSAGE) {
+            return;
+        }
+        window[data.tid](data);
     };
 
     /*
@@ -427,7 +428,7 @@ YUI.add("crossframe", function (Y) {
      */
     _init = function () {
         Y.log("_init(): is executed", "info", MODULE_ID);
-        if (typeof window.addEventListener !== "undefined") {   // W3C browsers.
+        if (typeof window.addEventListener !== "undefined") { // W3C browsers.
             window.addEventListener("message", _onMessage, false);
         } else if (typeof window.attachEvent !== "undefined" && Y.UA.ie >= 8) { // IE browsers.
             window.attachEvent("onmessage", _onMessage);
