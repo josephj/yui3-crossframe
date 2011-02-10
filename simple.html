@@ -27,19 +27,20 @@ textarea {
     height: 200px;
 }
 </style>
-<script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
+<script type="text/javascript" src="yui-debug-fix.js"></script> 
 <script type="text/javascript" src="crossframe.js"></script>
 <script type="text/javascript">
 YUI().use("crossframe", "json-stringify", function (Y) {
     var formNode = Y.one("form");
-    Y.CrossFrame.setOpener("simple-iframe");
     formNode.on("submit", function (e) {
         e.preventDefault();
         var frameName = "frames['simple-iframe']",
             message   = formNode.one("textarea").get("value"),
             config    = {
-                "eventType"    : "crossframe:test1",
-                "callback"     : function (o) {
+                "proxy"       : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
+                "reverseProxy": "http://josephj.com/project/yui3-crossframe/proxy.html",
+                "eventType"   : "crossframe:test1",
+                "callback"    : function (o) {
                     alert(o.info);
                 }
             };
@@ -51,12 +52,13 @@ YUI().use("crossframe", "json-stringify", function (Y) {
 <body>
     <h1>Y.CrossFrame Simple Example</h1>
     <p>
-        Current Location: <a href="http://josephj.com/project/yui3-crossframe/simple.html">http://josephj.com/project/yui3-crossframe/simple.html</a>
+        Current Location:
+        <a href="http://josephj.com/project/yui3-crossframe/simple.html">http://josephj.com/project/yui3-crossframe/simple.html</a>
     </p>
     <form>
         <textarea>Hello World</textarea><br>
         <input type="submit" value="Submit">
     </form>
-    <iframe src="http://josephjiang.com/project/yui3-crossframe/simple-iframe.html" name="simple-iframe" width="500" height="500" border="3" frameborder="3"></iframe>
+    <iframe src="http://josephjiang.com/project/yui3-crossframe/simple-iframe.html" id="simple-iframe" name="simple-iframe" width="500" height="500" border="3" frameborder="3"></iframe>
 </body>
 </html>

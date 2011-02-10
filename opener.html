@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-tw">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Cross Frame Prototype</title>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssfonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssbase/base-min.css">
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-weight: bold;
+}
+iframe {
+    border: solid 3px #ccc;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    *position: absolute;
+}
+textarea {
+    width: 500px;
+    height: 200px;
+}
+</style>
+</head>
+<body>
+    <h1>Y.CrossFrame Simple Example</h1>
+    <p>
+        Current Location: 
+        <a href="http://josephj.com/project/yui3-crossframe/opener.html">http://josephj.com/project/yui3-crossframe/opener.html</a>
+    </p>
+    <form>
+        <textarea name="message">Hello World</textarea><br>
+        <input type="submit" value="Submit">
+    </form>
+    <iframe src="http://josephjiang.com/project/yui3-crossframe/opener-iframe.html" id="opener-iframe" name="opener-iframe" width="500" height="500" border="3" frameborder="3"></iframe>
+    <script type="text/javascript">
+    (function () {
+        var openerObject,
+            formEl,
+            iframeEl;
+
+        // 取得相關 DOM 物件
+        iframeEl = document.getElementById("opener-iframe")
+        formEl   = document.getElementsByTagName("form")[0];
+
+        // 定義 sourceHandler
+        openerObject = {
+            sourceHandler: function (dataString) {
+                alert(dataString);
+            }
+        };
+
+        // 一定要設定一個 Reference 才行,直接設定會無效 ?
+        try {
+            iframeEl.contentWindow.opener = openerObject;
+        } catch (e) {
+            alert("Your browser doesn't support opener hack");
+        }
+
+        // 表單送出事件,呼叫 IFRAME 中所定義的方法 
+        formEl.onsubmit = function() {
+            window.event.returnValue = false;
+            openerObject.targetHandler(formEl.elements['message'].value);
+        };
+    }());
+    </script>
+</body>
+</html>

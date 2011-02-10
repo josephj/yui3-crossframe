@@ -26,38 +26,17 @@ iframe {
     <div>
         <iframe id="foo-iframe" src="http://josephjiang.com/project/yui3-crossframe/iframe.html" name="foo" width="500" height="500" border="3" frameborder="3"></iframe>
     </div>
-    <script type="text/javascript" src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script> 
+    <script type="text/javascript" src="yui-debug-fix.js"></script> 
     <script type="text/javascript" src="crossframe.js"></script>
     <script type="text/javascript">
     YUI().use("json-parse", "event-custom", "node", "querystring-parse", "json-stringify", "crossframe", function (Y) {
-        Y.one("#foo-iframe").on("load", function (e) {
-            Y.log("josephj.com\n\n<iframe/> Load Event");
-
-            var region = e.target.get("viewportRegion"),
-                frameName = "frames['foo']",
-                config    = {
-                    "proxy"        : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
-                    "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html"
-                },
-                message = Y.JSON.stringify({
-                    "host"     : location.host,
-                    "url"      : location.href,
-                    "referrer" : document.referrer,
-                    "winHeight": region["height"],
-                    "winWidth" : region["width"]
-                });
-
-            Y.log("josephj.com\n\nSend cross-frame message:\n\n" + Y.JSON.stringify(message) + "\n\nto window.frames['foo']");
-            Y.CrossFrame.postMessage(frameName, message, config);
-
-        }); 
-
-        Y.one("window").on("resize", function (e) {
+        var postMessage = function () {
             var region = Y.one("#foo-iframe").get("viewportRegion"),
                 frameName = "frames['foo']",
                 config    = {
                     "proxy"        : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
-                    "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html"
+                    "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html",
+                    "eventType"    : "crossframe:test1"
                 },
                 message = Y.JSON.stringify({
                     "host"     : location.host,
@@ -69,26 +48,22 @@ iframe {
 
             Y.log("josephj.com\n\nSend cross-frame message:\n\n" + Y.JSON.stringify(message) + "\n\nto window.frames['foo']");
             Y.CrossFrame.postMessage(frameName, message, config);
+        };
+
+        postMessage(); 
+
+        Y.one("#foo-iframe").on("load", function (e) {
+            Y.log("josephj.com\n\n<iframe/> Load Event");
+            postMessage();
+        }); 
+
+        Y.one("window").on("resize", function (e) {
+            postMessage();
         });
 
         Y.on("windowresize", function (e) {
             Y.log("josephj.com\n\n<iframe/> Resize Event");
-            var region = Y.one("#foo-iframe").get("viewportRegion"),
-                frameName = "frames['foo']",
-                config    = {
-                    "proxy"        : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
-                    "reverseProxy" : "http://josephj.com/project/yui3-crossframe/proxy.html"
-                },
-                message = Y.JSON.stringify({
-                    "host"     : location.host,
-                    "url"      : location.href,
-                    "referrer" : document.referrer,
-                    "winHeight": region["height"],
-                    "winWidth" : region["width"]
-                });
-
-            Y.log("josephj.com\n\nSend cross-frame message:\n\n" + Y.JSON.stringify(message) + "\n\nto window.frames['foo']");
-            Y.CrossFrame.postMessage(frameName, message, config);
+            postMessage();
         });
     });
 
