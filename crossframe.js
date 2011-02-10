@@ -433,7 +433,7 @@ YUI.add("crossframe", function (Y) {
      * @public
      * @param {String} frameName window.name of target frame.
      */
-    setOpener = function (frameName) {
+    setOpener = function (targetFrameName) {
         // Don't continue if HTML5 postMessage is available.
         if (typeof window.postMessage !== "undefined") {
             return;
