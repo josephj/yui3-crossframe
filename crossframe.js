@@ -307,7 +307,7 @@ YUI.add("crossframe", function (Y) {
      *                        The following is Valid object keys.
      *                        1. callback     - Callback function when post message successfully.
      *                        2. proxy        - For legend browser submit message.
-     *                        3. reserveProxy - For legend browser callback.
+     *                        3. reverseProxy - For legend browser callback.
      *                        4. eventType    - Custom event name.
      * @return void
      */
