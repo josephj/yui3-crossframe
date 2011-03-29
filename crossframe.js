@@ -343,10 +343,24 @@ YUI.add("crossframe", function (Y) {
             frameString,
             isSupport,
             openerObject,
-            tId;
+            tId,
+            origin,
+            ports;
 
-        // Wrap required data.
         tId = parseInt(new Date().getTime(), 10);
+        // Prevent Firefox warning.
+        try {
+            origin = location.host.toString();
+        } catch (e) {
+            origin = "";
+        }
+        // Prevent Firefox warning.
+        try {
+            ports = location.port.toString();
+        } catch (e2) {
+            ports = "";
+        }
+        // Wrap required data.
         dataString = [
             "tid=" + tId,                                              // Trasaction ID.
             "eventType=" + encodeURIComponent(config.eventType),       // Event Name.
@@ -357,8 +371,8 @@ YUI.add("crossframe", function (Y) {
             "reverseProxy=" + encodeURIComponent(config.reverseProxy), // Callback proxy for legend browsers.
             "source=" + encodeURIComponent(window.name),               // Source frame name. It might be empty because top window usually doesn't have namei property.
             // For proxy.html...
-            "origin=" + location.host,
-            "ports=" + location.port
+            "origin=" + origin,
+            "ports=" + ports
         ].join("&");
 
         // Bind onSuccess function.
