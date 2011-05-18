@@ -322,7 +322,7 @@ YUI.add("crossframe", function (Y) {
         }
 
         // Check if target string is in right format.
-        if (!PATTERN.test(target)) {
+        if (!Y.Lang.isObject(target) && !PATTERN.test(target)) {
             Y.log("Frame string format error!\n" + target, "error", MODULE_ID);
             return;
         }
