@@ -274,7 +274,7 @@ YUI.add("crossframe", function (Y) {
         iframeEl.style.height     = "0";
         document.body.appendChild(iframeEl);
 
-        // Remove <iframe/> while it sends request succesfully
+        // Remove <iframe/> while it sends request successfully
         iframeNode = Y.one(iframeEl);
         iframeLoadHandle = iframeNode.on("load", function () {
             Y.detach(iframeLoadHandle);
@@ -309,6 +309,7 @@ YUI.add("crossframe", function (Y) {
      *                        2. proxy        - For legend browser submit message.
      *                        3. reverseProxy - For legend browser callback.
      *                        4. eventType    - Custom event name.
+     *                        5. useProxy     - Force to use proxy file even browser supports HTML5 postMessage.
      * @return void
      */
     postMessage =  function (target, message, config) {
@@ -333,6 +334,7 @@ YUI.add("crossframe", function (Y) {
         config.proxy        = config.proxy        || null;
         config.reverseProxy = config.reverseProxy || null;
         config.eventType    = config.eventType    || null;
+        config.useProxy     = (config.useProxy === true) || false;
 
         // Message must be transformed to string format.
         if (typeof message === "Object") {
@@ -355,6 +357,7 @@ YUI.add("crossframe", function (Y) {
             "domain=" + encodeURIComponent(document.domain),           // Source domain.
             "url=" + encodeURIComponent(location.href),                // Source URL.
             "reverseProxy=" + encodeURIComponent(config.reverseProxy), // Callback proxy for legend browsers.
+            "useProxy=" + config.useProxy,                            // Always use proxy
             "source=" + encodeURIComponent(window.name),               // Source frame name. It might be empty because top window usually doesn't have namei property.
             // For proxy.html...
             "origin=" + location.host,
@@ -372,12 +375,13 @@ YUI.add("crossframe", function (Y) {
 
         isSupport = (typeof window.postMessage === "undefined" ? false : true);
         isSupport = (target === "opener" && Y.UA.ie ? false : isSupport); // Special case: IE8 doesn't support postMessage to opener.
+        isSupport = (config.useProxy) ? false : isSupport;
 
         switch (isSupport) {
         case false: // Not supporting HTML5 postMessage situation.
             // By default, this library uses IE 7- opener hack to post message (It has no GET limitation).
             // However, for window.open() situation we should avoid this hack because it might cause opener object fails.
-            if (target !== "opener") {
+            if (target !== "opener" && !config.useProxy) {
                 Y.log("postMessage() - You are using opener hack approach.", "info", MODULE_ID);
                 if (!_openerObject) {
                     _openerObject = {};
