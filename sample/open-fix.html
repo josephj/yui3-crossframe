@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-tw">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Cross Frame Prototype</title>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssfonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssbase/base-min.css">
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-weight: bold;
+}
+.location {
+    font-size: 123.1%;
+    font-weight: bold;
+    color: red;
+    background: yellow;
+    margin-bottom: 10px;
+    padding: 5px;
+}
+</style>
+<script type="text/javascript" src="../../lab/yui3-opener-proxy-bug/yui-debug-fix.js"></script> 
+<script type="text/javascript" src="crossframe.js"></script>
+<script type="text/javascript">
+YUI().use("crossframe", function (Y) {
+    Y.on("click", function (e) {
+        e.preventDefault();
+
+        var node = this,
+            loginWindow = window.open("http://josephjiang.com/project/yui3-crossframe/login-fix.html", "popup_login", "width=500, height=200");
+
+        Y.Global.on("crossframe:after-login", function (e, message, callback) {
+
+            // Let login window can do something.
+//            callback({"result": "success"});
+
+            // Do something for myself.
+            if (node) { 
+                node.ancestor().setContent("admin logged in successfully");
+            }
+
+            // Close login window
+            loginWindow.close();
+        
+        });
+    }, ".login-link");
+});
+</script>
+</head>
+<body>
+
+    <h1>Y.CrossFrame Open Example</h1>
+    <div class="location">Host: josephj.com</div>
+    <div>
+        <a class="login-link" href="login-fix.html">Login</a> (http://josephjiang.com/project/yui3-crossframe/login-fix.html)
+    </div>
+
+</body>
+</html>

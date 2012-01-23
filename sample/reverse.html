@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Reverse Sample of CrossFrame</title>
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-size: 123.1%;
+    font-weight: bold;
+}
+iframe {
+    border: solid 3px #ccc;
+}
+</style>
+</head>
+<body>
+    <h1>Base Page Domain - josephj.com</h1>
+    <xmp>Y.Global.on("crossframe:message", function (e, o) {
+    alert(o.message);
+});
+    </xmp>
+    <div>
+        <iframe id="reverse-iframe" src="http://josephjiang.com/project/yui3-crossframe/sample/reverse-iframe.html" name="reverse-iframe" width="500" height="100" border="3" frameborder="3"></iframe>
+    </div>
+    <script type="text/javascript" src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
+    <script type="text/javascript" src="../crossframe.js"></script>
+    <script>
+    YUI().use("crossframe", function (Y) {
+        Y.Global.on("crossframe:message", function (e, o) {
+            alert(o.message);
+        });
+    });
+    </script>
+</body>
+</html>

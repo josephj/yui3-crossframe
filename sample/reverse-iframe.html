@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cross Frame Prototype</title>
+<style type="text/css">
+body {
+    padding: 5px;
+}
+h1 {
+    font-family: Georgia;
+    font-size: 123.1%;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+    <h1>Iframe Domain - josephjiang.com</h1>
+    <button id="button">Y.CrossFrame.postMessage("parent", "hello");</button>
+    <script type="text/javascript" src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
+    <script type="text/javascript" src="../crossframe.js"></script>
+    <script type="text/javascript">
+    YUI().use("crossframe", function (Y) {
+        var config = {
+            "proxy" : "http://josephj.com/project/yui3-crossframe/proxy.html"
+        };
+        Y.one("#button").on("click", function () {
+            Y.CrossFrame.postMessage("parent", "hello", config);
+        });
+    });
+
+    </script>
+</body>
+</html>

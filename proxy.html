@@ -93,8 +93,10 @@
     targetWindow.YUI().use("event-custom", "crossframe", function (Y) {
 
         // Add window.opener hack support.
-        if (typeof targetWindow.opener !== "undefined" && typeof targetWindow.opener.messageCallbackAdapter !== "undefined") {
-            targetWindow.opener.messageReceiveAdapter = Y.CrossFrame.messageReceiveAdapter;
+        if (!_data.useProxy) {
+            if (typeof targetWindow.opener !== "undefined" && typeof targetWindow.opener.messageCallbackAdapter !== "undefined") {
+                targetWindow.opener.messageReceiveAdapter = Y.CrossFrame.messageReceiveAdapter;
+            }
         }
 
         var evt          = {},
@@ -108,7 +110,8 @@
             origin       = _data.origin,
             source       = _data.source,
             ports        = _data.ports,
-            reverseProxy = _data.reverseProxy;
+            reverseProxy = _data.reverseProxy
+            useProxy     = _data.useProxy;
 
         // Check if target window has CrossFrame utility.
         if (!Y.CrossFrame) {
