@@ -298,7 +298,7 @@ YUI.add("crossframe", function (Y) {
      * @static
      * @param {String} target Window object using string "frames['foo']"
      * @param {Mixed} message Message you want to send to target document (frame)
-     * @param {Object} config Attribute object. 
+     * @param {Object} config Attribute object.
      *                        The most important property is proxy, URL of proxy file.
      *                        Set this or this library can't make legend browser works.
      *                        Proxy file source code should be exactly same with
@@ -387,7 +387,8 @@ YUI.add("crossframe", function (Y) {
             config.callback(o);
         };
 
-        isSupport = (typeof window.postMessage === "undefined" ? false : true);
+        isSupport = ((Y.UA.ie && Y.UA.ie < 8) ? false : true);
+        isSupport = (typeof window.postMessage === "undefined" ? false : isSupport);
         isSupport = (target === "opener" && Y.UA.ie ? false : isSupport); // Special case: IE8 doesn't support postMessage to opener.
         isSupport = (config.useProxy) ? false : isSupport;
 
@@ -406,7 +407,7 @@ YUI.add("crossframe", function (Y) {
                 _postMessageByOpener(dataString, config.proxy);
                 return;
             }
-            if (!config.proxy || !config.reverseProxy) {
+            if (!config.proxy) {
                 Y.log("You can't use Y.CrossFrame.postMessage in this legend browser without providing proxy URL", "error", MODULE_ID);
                 return;
             }
