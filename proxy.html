@@ -7,20 +7,20 @@
 /*global location, window, top */
 /*jslint evil:true */
 /*
- * This file is for the browsers which does not implement HTML 5 web messaging. 
+ * This file is for the browsers which does not implement HTML 5 web messaging.
  * Currently (2010-10) that would be Internet Explorer 6 and 7.
- * 
+ *
  * You need to place this file under same domain that message posts to.
  * For example, you want to send message from a.com to iframe of b.com, you need to place this in b.com.
- * I recommend that you should put this file at both domains because communication is usually  
+ * I recommend that you should put this file at both domains because communication is usually
  * not just one way.
  *
  * @author Joseph Chiang <josephj6802@gmail.com>
  * @created 2010-10-07
- */ 
+ */
 (function () {
 
-    var _data, 
+    var _data,
         targetWindow,
         //========================
         // Constants
@@ -39,7 +39,7 @@
      * Parsing provided location.hash string to object literal
      *
      * @method parseQueryString
-     * @param hash {String} URL fragment identifier 
+     * @param hash {String} URL fragment identifier
      * @return {Object} hash information in object literal format
      */
     _parseQueryString = function (hash) {
@@ -69,7 +69,7 @@
 
     // Only execution when required parameter exist.
     if (
-        !_data.hasOwnProperty("tid") || 
+        !_data.hasOwnProperty("tid") ||
         !_data.hasOwnProperty("message") ||
         !_data.hasOwnProperty("target")
     ) {
@@ -77,13 +77,13 @@
     }
 
     // Check if target is a valid window name.
-    if (!PATTERN.test(_data.target)) {
+    if (!PATTERN.test(_data.target) && !eval("parent." + _data.target)) {
         throw new Error("Invalid target: " + _data.target);
     }
 
     // Get window object.
     targetWindow = eval("parent." + _data.target);
-    
+
     // Check if target window has YUI.
     if (!targetWindow.YUI) {
         throw new Error("YUI doesn't exist in target page.");
@@ -118,7 +118,7 @@
             throw new Error("Y.CrossFrame doesn't exist.");
         }
 
-        // Receive confirmation message, executing prepared onSuccess function 
+        // Receive confirmation message, executing prepared onSuccess function
         // when receive succssful callback message.
         if (decodeURIComponent(message) === Y.CrossFrame.SUCCESS_MESSAGE) {
             try {
@@ -128,7 +128,7 @@
             }
             return;
         }
-        
+
         // Reproduce event object.
         // Make it very similar with onmessage event object.
         evt = {
@@ -137,7 +137,7 @@
             "origin"      : null, // TODO
             "lastEventId" : null,
             "source"      : source,
-            "ports"       : ports 
+            "ports"       : ports
         };
 
         callback = function (o) {
@@ -147,7 +147,7 @@
             }
             var i,
                 query;
-            
+
             // Change attribute object to query string.
             query = [];
             for (i in o) {
@@ -157,10 +157,10 @@
                         continue;
                     }
                     o[i] = o[i].toString();
-                    query.push(i + "=" + encodeURIComponent(o[i]));    
+                    query.push(i + "=" + encodeURIComponent(o[i]));
                 }
             }
-            
+
             // Compose information to query string.
             target = source || "parent";
             url = [
