@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Two Way Sample of CrossFrame</title>
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-size: 123.1%;
+    font-weight: bold;
+}
+iframe {
+    border: solid 3px #ccc;
+    position: fixed;
+    right: 10px;
+    top: 10px;
+}
+</style>
+</head>
+<body>
+    <h1>Base Page Domain - josephj.com</h1>
+    <button id="button">Y.CrossFrame.postMessage("child", $timestamp);</button>
+    <ul></ul>
+    <div>
+        <iframe id="child" src="http://josephjiang.com/project/yui3-crossframe/sample/two-way-iframe.html" name="child" width="500" height="500" border="3" frameborder="3"></iframe>
+    </div>
+    <script type="text/javascript" src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
+    <script type="text/javascript" src="../crossframe.js"></script>
+    <script>
+    YUI().use("crossframe", function (Y) {
+        var PROXY_URL = "http://josephjiang.com/project/yui3-crossframe/proxy.html",
+            REVERSE_PROXY_URL = "http://josephj.com/project/yui3-crossframe/proxy.html",
+            timestamp;
+        Y.Global.on("crossframe:message", function (e, o, callback) {
+            Y.one("ul").append("<li>" + o.message + "</li>");
+            callback({response: "Callback - Get message from parent iframe successfully."});
+        });
+        Y.one("#button").on("click", function () {
+            timestamp = parseInt((new Date()).getTime(), 10);
+            Y.CrossFrame.postMessage(
+                'frames["child"]',
+                timestamp + " from parent",
+                {
+                    "proxy" : PROXY_URL,
+                    "reverseProxy": REVERSE_PROXY_URL,
+                    "callback": function (o) {
+                        Y.one("ul").append("<li>" + o.response + "</li>");
+                    }
+                }
+            );
+        });
+    });
+    </script>
+</body>
+</html>

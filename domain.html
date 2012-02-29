@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="zh-tw">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Cross Frame Prototype</title>
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssfonts/fonts-min.css">
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssbase/base-min.css">
+<style type="text/css">
+body {
+    padding: 10px;
+}
+h1 {
+    margin: 20px 0;
+    font-family: Georgia;
+    font-weight: bold;
+}
+iframe {
+    border: solid 3px #ccc;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    *position: absolute;
+}
+textarea {
+    width: 500px;
+    height: 200px;
+}
+</style>
+<script type="text/javascript" src="yui-debug-fix.js"></script>
+<script type="text/javascript" src="crossframe.js"></script>
+<script type="text/javascript">
+YUI().use("crossframe", "json-stringify", function (Y) {
+    var formNode = Y.one("form");
+    formNode.on("submit", function (e) {
+        e.preventDefault();
+        var frameName = "frames['domain-iframe']",
+            message   = formNode.one("textarea").get("value"),
+            config    = {
+                "proxy"       : "http://josephjiang.com/project/yui3-crossframe/proxy.html",
+                "reverseProxy": "http://josephj.com/project/yui3-crossframe/proxy.html",
+                "callback"    : function (o) {
+                    alert(o.info);
+                }
+            };
+        Y.CrossFrame.postMessage(frameName, message, config);
+    });
+});
+</script>
+</head>
+<body>
+    <h1>Y.CrossFrame Simple Example</h1>
+    <p>
+        Current Location:
+        <a href="http://josephj.com/project/yui3-crossframe/domain.html">http://josephj.com/project/yui3-crossframe/domain.html</a>
+    </p>
+    <form>
+        <textarea>Hello World</textarea><br>
+        <input type="submit" value="Submit">
+    </form>
+    <iframe src="http://josephjiang.com/project/yui3-crossframe/domain-iframe.html" id="domain-iframe" name="domain-iframe" width="500" height="500" border="3" frameborder="3"></iframe>
+</body>
+</html>
