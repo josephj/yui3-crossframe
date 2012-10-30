@@ -298,7 +298,7 @@ YUI.add("crossframe", function (Y) {
      * @static
      * @param {String} target Window object using string "frames['foo']"
      * @param {Mixed} message Message you want to send to target document (frame)
-     * @param {Object} config Attribute object. 
+     * @param {Object} config Attribute object.
      *                        The most important property is proxy, URL of proxy file.
      *                        Set this or this library can't make legend browser works.
      *                        Proxy file source code should be exactly same with
@@ -529,4 +529,13 @@ YUI.add("crossframe", function (Y) {
 
     _init();
 
-}, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse", "json-stringify"]});
+}, "3.2.0", {
+    "group"    : "mui",
+    "js"       : "crossframe/crossframe.js",
+    "requires" : [
+        "node-base",
+        "event-custom",
+        "querystring-parse",
+        "json-stringify"
+    ]
+});
