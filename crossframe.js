@@ -534,4 +534,13 @@ YUI.add("crossframe", function (Y) {
 
     _init();
 
-}, "3.2.0", {"requires": ["node-base", "event-custom", "querystring-parse", "json-stringify"]});
+}, "3.2.0", {
+    "group"    : "mui",
+    "js"       : "crossframe/crossframe.js",
+    "requires" : [
+        "node-base",
+        "event-custom",
+        "querystring-parse",
+        "json-stringify"
+    ]
+});
